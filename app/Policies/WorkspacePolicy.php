@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\User;
+use App\Models\Workspace;
+
+class WorkspacePolicy
+{
+    public function view(User $user, Workspace $workspace): bool
+    {
+        return $workspace->roleOf($user) !== null;
+    }
+
+    public function manage(User $user, Workspace $workspace): bool
+    {
+        return (bool) $workspace->roleOf($user)?->canManage();
+    }
+
+    public function delete(User $user, Workspace $workspace): bool
+    {
+        return $workspace->owner_id === $user->id;
+    }
+}
