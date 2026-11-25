@@ -12,6 +12,14 @@ class WorkspacePolicy
         return $workspace->roleOf($user) !== null;
     }
 
+    /**
+     * Any member may work with contacts, lists and templates.
+     */
+    public function contribute(User $user, Workspace $workspace): bool
+    {
+        return $workspace->roleOf($user) !== null;
+    }
+
     public function manage(User $user, Workspace $workspace): bool
     {
         return (bool) $workspace->roleOf($user)?->canManage();

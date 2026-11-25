@@ -17,6 +17,11 @@ class Workspace extends Model
 
     protected $fillable = [
         'name',
+        'default_country',
+    ];
+
+    protected $attributes = [
+        'default_country' => 'NG',
     ];
 
     /**
@@ -46,6 +51,26 @@ class Workspace extends Model
     public function connections(): HasMany
     {
         return $this->hasMany(ProviderConnection::class);
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
+    public function lists(): HasMany
+    {
+        return $this->hasMany(ContactList::class);
+    }
+
+    public function imports(): HasMany
+    {
+        return $this->hasMany(ContactImport::class);
+    }
+
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class);
     }
 
     /**

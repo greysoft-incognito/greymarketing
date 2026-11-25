@@ -73,4 +73,15 @@ class WorkspaceTest extends TestCase
         $this->deleteJson("/api/workspaces/{$workspace->ulid}")->assertAccepted();
         $this->assertModelMissing($workspace);
     }
+
+    public function testOwnerCanSetTheDefaultCountry(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->patchJson("/api/workspaces/{$workspace->ulid}", ['default_country' => 'ke'])
+            ->assertAccepted()
+            ->assertJsonPath('data.default_country', 'KE');
+    }
 }
