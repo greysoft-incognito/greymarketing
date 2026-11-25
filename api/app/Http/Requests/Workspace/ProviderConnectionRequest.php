@@ -30,6 +30,7 @@ class ProviderConnectionRequest extends FormRequest
             'is_default' => ['sometimes', 'boolean'],
             'credentials' => [$connection ? 'sometimes' : 'required', 'array'],
             'settings' => ['sometimes', 'array'],
+            'settings.rate_per_second' => ['nullable', 'integer', 'between:1,1000'],
         ];
 
         if (! $connection) {

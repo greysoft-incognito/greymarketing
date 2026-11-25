@@ -73,6 +73,11 @@ class Workspace extends Model
         return $this->hasMany(Template::class);
     }
 
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
     /**
      * The user's role in this workspace, or null when they are not a member.
      */

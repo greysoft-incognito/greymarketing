@@ -8,5 +8,6 @@ final readonly class SmsMessage
         public string $to,
         public string $body,
         public ?string $from = null,
+        public ?string $callbackUrl = null,
     ) {}
 }
