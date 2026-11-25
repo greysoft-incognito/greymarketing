@@ -1,0 +1,167 @@
+/* Utilities are !important so they win over Quasar's unlayered framework CSS. */
+@import "tailwindcss" important;
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Tokens from the approved design: Greysoft grey and maroon, filled surfaces, no outlines. */
+:root {
+  --radius: 0.5rem;
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #843a4c;
+  --primary-foreground: #ffffff;
+  --secondary: #e9e9eb;
+  --secondary-foreground: #18181b;
+  --muted: #e9e9eb;
+  --muted-foreground: #626369;
+  --accent: #e9e9eb;
+  --accent-foreground: #18181b;
+  --brand: #843a4c;
+  --brand-soft: #f5e8ec;
+  --brand-grey: #737478;
+  --destructive: #c2312b;
+  --destructive-soft: #fcebea;
+  --success: #15803d;
+  --success-soft: #e7f5ec;
+  --warning: #b45309;
+  --warning-soft: #fbf1e2;
+  --info: #2f5f9a;
+  --info-soft: #e8eef7;
+  --border: #ececee;
+  --input: #ededef;
+  --switch-off: #cfcfd3;
+  --ring: #843a4c;
+  --ink: #2b2b2f;
+  --ink-foreground: #f4f4f5;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, .05), 0 4px 14px rgba(24, 24, 27, .05);
+
+  /* Keep Quasar's brand helpers in step with the theme. */
+  --q-primary: var(--primary);
+  --q-secondary: var(--secondary);
+  --q-accent: var(--accent);
+  --q-positive: var(--success);
+  --q-negative: var(--destructive);
+  --q-info: var(--info);
+  --q-warning: var(--warning);
+}
+
+.dark {
+  --background: #101012;
+  --foreground: #f2f2f3;
+  --card: #19191c;
+  --card-foreground: #f2f2f3;
+  --popover: #1e1e22;
+  --popover-foreground: #f2f2f3;
+  --primary: #b5546c;
+  --primary-foreground: #ffffff;
+  --secondary: #26262a;
+  --secondary-foreground: #f2f2f3;
+  --muted: #26262a;
+  --muted-foreground: #9d9ea4;
+  --accent: #26262a;
+  --accent-foreground: #f2f2f3;
+  --brand: #cf7088;
+  --brand-soft: #3a1f27;
+  --brand-grey: #8e8f94;
+  --destructive: #f2736d;
+  --destructive-soft: #2f1514;
+  --success: #4ade80;
+  --success-soft: #10291a;
+  --warning: #f0a845;
+  --warning-soft: #2d2210;
+  --info: #6aa8ee;
+  --info-soft: #122236;
+  --border: #2a2a2f;
+  --input: #26262a;
+  --switch-off: #3f3f45;
+  --ring: #cf7088;
+  --ink: #19191c;
+  --ink-foreground: #f2f2f3;
+  --sidebar: #19191c;
+  --sidebar-foreground: #f2f2f3;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, .3);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-card: var(--shadow-card);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-grey: var(--brand-grey);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-switch-off: var(--switch-off);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+}
+
+/* Unlayered on purpose: Quasar's own body styles are unlayered too. */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Quasar makes `.flex` wrap; Tailwind and shadcn-vue expect the CSS default. */
+.flex {
+  flex-wrap: nowrap;
+}
