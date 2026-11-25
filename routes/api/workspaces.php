@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Workspace\ContactController;
+use App\Http\Controllers\Workspace\ContactImportController;
 use App\Http\Controllers\Workspace\ContactListController;
 use App\Http\Controllers\Workspace\ProviderConnectionController;
 use App\Http\Controllers\Workspace\WorkspaceController;
@@ -21,5 +22,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('lists', ContactListController::class);
         Route::post('lists/{list}/contacts', [ContactListController::class, 'attach'])->name('lists.contacts.attach');
         Route::delete('lists/{list}/contacts', [ContactListController::class, 'detach'])->name('lists.contacts.detach');
+
+        Route::apiResource('imports', ContactImportController::class)->only(['index', 'store', 'show']);
+        Route::post('imports/{import}/start', [ContactImportController::class, 'start'])->name('imports.start');
     });
 });
