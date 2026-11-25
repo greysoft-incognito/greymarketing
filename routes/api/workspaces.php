@@ -4,6 +4,7 @@ use App\Http\Controllers\Workspace\ContactController;
 use App\Http\Controllers\Workspace\ContactImportController;
 use App\Http\Controllers\Workspace\ContactListController;
 use App\Http\Controllers\Workspace\ProviderConnectionController;
+use App\Http\Controllers\Workspace\TemplateController;
 use App\Http\Controllers\Workspace\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,5 +26,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('imports', ContactImportController::class)->only(['index', 'store', 'show']);
         Route::post('imports/{import}/start', [ContactImportController::class, 'start'])->name('imports.start');
+
+        Route::apiResource('templates', TemplateController::class);
+        Route::post('templates/{template}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
     });
 });
