@@ -5,6 +5,7 @@ namespace App\Services\Audience;
 use App\Enums\ImportStatus;
 use App\Models\Contact;
 use App\Models\ContactImport;
+use App\Services\Billing\UsageLimits;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -24,7 +25,10 @@ class ContactImporter
         'last_name' => ['last name', 'lastname', 'last_name', 'surname', 'family name'],
     ];
 
-    public function __construct(protected ContactNormalizer $normalizer) {}
+    public function __construct(
+        protected ContactNormalizer $normalizer,
+        protected UsageLimits $limits,
+    ) {}
 
     /**
      * Guess a mapping from CSV headers to contact fields.
@@ -68,7 +72,8 @@ class ContactImporter
         foreach ($this->reader($import)->chunks(self::CHUNK_SIZE) as $chunk) {
             [$rows, $chunkFailures] = $this->prepare($import, $chunk);
 
-            $ids = $this->store($import, $rows);
+            [$ids, $limitFailures] = $this->store($import, $rows);
+            $chunkFailures = [...$chunkFailures, ...$limitFailures];
 
             $import->contactList?->addContacts($ids);
 
@@ -140,6 +145,7 @@ class ContactImporter
             $seen += $keys;
 
             $rows[] = [
+                'line' => $line,
                 'email' => $email,
                 'phone' => $phone,
                 'first_name' => isset($row['first_name']) ? Str::limit($row['first_name'], 100, '') : null,
@@ -152,18 +158,20 @@ class ContactImporter
     }
 
     /**
-     * Update contacts that already exist and insert the rest.
+     * Update contacts that already exist and insert the rest, up to the plan's contact limit.
      *
      * @param  array<int, array<string, mixed>>  $rows
-     * @return array<int, int> Ids of every stored contact.
+     * @return array{0: array<int, int>, 1: array<int, array{line: int, reason: string}>} Stored contact ids and rows over the limit.
      */
     protected function store(ContactImport $import, array $rows): array
     {
         if (! $rows) {
-            return [];
+            return [[], []];
         }
 
         $workspace = $import->workspace;
+        $room = $this->limits->contactRoom($workspace);
+        $failures = [];
         $emails = array_values(array_filter(array_column($rows, 'email')));
         $phones = array_values(array_filter(array_column($rows, 'phone')));
 
@@ -200,6 +208,14 @@ class ContactImporter
                 continue;
             }
 
+            if ($room !== null && count($inserts) >= $room) {
+                $failures[] = ['line' => $row['line'], 'reason' => "Your plan's contact limit has been reached."];
+
+                continue;
+            }
+
+            unset($row['line']);
+
             $inserts[] = [
                 ...$row,
                 'ulid' => (string) Str::ulid(),
@@ -216,6 +232,6 @@ class ContactImporter
             $ids = [...$ids, ...$workspace->contacts()->whereIn('ulid', array_column($inserts, 'ulid'))->pluck('id')->all()];
         }
 
-        return $ids;
+        return [$ids, $failures];
     }
 }

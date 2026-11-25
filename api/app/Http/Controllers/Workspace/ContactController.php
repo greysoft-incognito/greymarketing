@@ -10,6 +10,7 @@ use App\Http\Resources\ContactCollection;
 use App\Http\Resources\ContactResource;
 use App\Models\Contact;
 use App\Models\Workspace;
+use App\Services\Billing\UsageLimits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -54,8 +55,14 @@ class ContactController extends Controller
         ]);
     }
 
-    public function store(ContactRequest $request, Workspace $workspace)
+    public function store(ContactRequest $request, Workspace $workspace, UsageLimits $limits)
     {
+        abort_if(
+            $limits->contactRoom($workspace) === 0,
+            HttpStatus::PAYMENT_REQUIRED->value,
+            'Your plan\'s contact limit has been reached.'
+        );
+
         $contact = $workspace->contacts()->create($request->safe()->only(['email', 'phone', 'first_name', 'last_name', 'fields']));
 
         $this->applyRequestState($request, $workspace, $contact);
