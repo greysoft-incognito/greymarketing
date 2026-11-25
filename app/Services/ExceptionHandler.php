@@ -12,6 +12,7 @@ use Illuminate\Foundation\Exceptions\RegisterErrorViewPaths;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -79,6 +80,10 @@ class ExceptionHandler // extends Handler
                 $e instanceof ThrottleRequestsException => static::renderException(
                     HttpStatus::message(HttpStatus::TOO_MANY_REQUESTS),
                     HttpStatus::TOO_MANY_REQUESTS
+                ),
+                static::isHttpException($e) => static::renderException(
+                    $plainMessage ?: 'An error occured',
+                    $e->getStatusCode()
                 ),
                 default => static::renderException($msg, HttpStatus::SERVER_ERROR),
             };
