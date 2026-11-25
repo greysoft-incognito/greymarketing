@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Workspace;
 
 use App\Enums\HttpStatus;
-use App\Helpers\Provider;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WorkspaceCollection;
 use App\Http\Resources\WorkspaceResource;
@@ -16,7 +15,11 @@ class WorkspaceController extends Controller
     {
         $workspaces = $request->user()->workspaces()->latest('workspaces.id')->paginate($request->input('limit', 30));
 
-        return Provider::response()->success(new WorkspaceCollection($workspaces));
+        return (new WorkspaceCollection($workspaces))->additional([
+            'message' => HttpStatus::message(HttpStatus::OK),
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
+        ]);
     }
 
     public function store(Request $request)
@@ -27,16 +30,22 @@ class WorkspaceController extends Controller
 
         $workspace = Workspace::createFor($request->user(), $valid['name']);
 
-        return Provider::response()->success(new WorkspaceResource($workspace), HttpStatus::CREATED, [
+        return (new WorkspaceResource($workspace))->additional([
             'message' => 'Workspace created.',
-        ]);
+            'status' => 'success',
+            'status_code' => HttpStatus::CREATED,
+        ])->response()->setStatusCode(HttpStatus::CREATED->value);
     }
 
     public function show(Workspace $workspace)
     {
         $this->authorize('view', $workspace);
 
-        return Provider::response()->success(new WorkspaceResource($workspace));
+        return (new WorkspaceResource($workspace))->additional([
+            'message' => HttpStatus::message(HttpStatus::OK),
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
+        ]);
     }
 
     public function update(Request $request, Workspace $workspace)
@@ -49,25 +58,29 @@ class WorkspaceController extends Controller
 
         $workspace->update($valid);
 
-        return Provider::response()->success(new WorkspaceResource($workspace), HttpStatus::ACCEPTED, [
+        return (new WorkspaceResource($workspace))->additional([
             'message' => 'Workspace updated.',
-        ]);
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
     }
 
     public function destroy(Request $request, Workspace $workspace)
     {
         $this->authorize('delete', $workspace);
 
-        if ($request->user()->workspaces()->count() < 2) {
-            return Provider::response()->error([], HttpStatus::UNPROCESSABLE_ENTITY, [
-                'message' => 'You cannot delete your only workspace.',
-            ]);
-        }
+        abort_if(
+            $request->user()->workspaces()->count() < 2,
+            HttpStatus::UNPROCESSABLE_ENTITY->value,
+            'You cannot delete your only workspace.'
+        );
 
         $workspace->delete();
 
-        return Provider::response()->success([], HttpStatus::ACCEPTED, [
+        return (new WorkspaceResource($workspace))->additional([
             'message' => 'Workspace deleted.',
-        ]);
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
     }
 }

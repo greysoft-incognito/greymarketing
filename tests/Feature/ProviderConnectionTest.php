@@ -165,4 +165,16 @@ class ProviderConnectionTest extends TestCase
             'body' => 'Hi',
         ])->assertUnprocessable()->assertJsonValidationErrors('to');
     }
+
+    public function testSendTestReportsProviderFailures(): void
+    {
+        $connection = ProviderConnection::factory()->for($this->workspace)->create();
+
+        Http::fake(['api.ng.termii.com/*' => Http::response(['message' => 'Insufficient balance'], 400)]);
+
+        $this->postJson($this->url("/{$connection->ulid}/send-test"), [
+            'to' => '+2348012345678',
+            'body' => 'Hi',
+        ])->assertUnprocessable()->assertJsonPath('message', 'Termii: Insufficient balance');
+    }
 }

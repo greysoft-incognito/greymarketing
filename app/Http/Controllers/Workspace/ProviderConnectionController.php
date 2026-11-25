@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Workspace;
 use App\Enums\Channel;
 use App\Enums\ConnectionStatus;
 use App\Enums\HttpStatus;
-use App\Helpers\Provider;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Workspace\ProviderConnectionRequest;
+use App\Http\Resources\ProviderCollection;
 use App\Http\Resources\ProviderConnectionCollection;
 use App\Http\Resources\ProviderConnectionResource;
+use App\Http\Resources\SendResultResource;
 use App\Messaging\Contracts\SendsEmail;
 use App\Messaging\Contracts\SendsSms;
 use App\Messaging\Data\EmailMessage;
@@ -28,7 +29,11 @@ class ProviderConnectionController extends Controller
      */
     public function catalog(ProviderManager $manager)
     {
-        return Provider::response()->success(['data' => $manager->catalog()]);
+        return (new ProviderCollection($manager->catalog()))->additional([
+            'message' => HttpStatus::message(HttpStatus::OK),
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
+        ]);
     }
 
     public function index(Request $request, Workspace $workspace)
@@ -44,7 +49,11 @@ class ProviderConnectionController extends Controller
             ->latest('id')
             ->paginate($request->input('limit', 30));
 
-        return Provider::response()->success(new ProviderConnectionCollection($connections));
+        return (new ProviderConnectionCollection($connections))->additional([
+            'message' => HttpStatus::message(HttpStatus::OK),
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
+        ]);
     }
 
     public function store(ProviderConnectionRequest $request, Workspace $workspace)
@@ -57,16 +66,22 @@ class ProviderConnectionController extends Controller
             $connection->makeDefault();
         }
 
-        return Provider::response()->success(new ProviderConnectionResource($connection), HttpStatus::CREATED, [
+        return (new ProviderConnectionResource($connection))->additional([
             'message' => 'Provider connected.',
-        ]);
+            'status' => 'success',
+            'status_code' => HttpStatus::CREATED,
+        ])->response()->setStatusCode(HttpStatus::CREATED->value);
     }
 
     public function show(Workspace $workspace, ProviderConnection $connection)
     {
         $this->authorize('view', $workspace);
 
-        return Provider::response()->success(new ProviderConnectionResource($connection));
+        return (new ProviderConnectionResource($connection))->additional([
+            'message' => HttpStatus::message(HttpStatus::OK),
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
+        ]);
     }
 
     public function update(ProviderConnectionRequest $request, Workspace $workspace, ProviderConnection $connection)
@@ -87,9 +102,11 @@ class ProviderConnectionController extends Controller
             $connection->makeDefault();
         }
 
-        return Provider::response()->success(new ProviderConnectionResource($connection), HttpStatus::ACCEPTED, [
+        return (new ProviderConnectionResource($connection))->additional([
             'message' => 'Provider connection updated.',
-        ]);
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
     }
 
     public function destroy(Workspace $workspace, ProviderConnection $connection)
@@ -98,9 +115,11 @@ class ProviderConnectionController extends Controller
 
         $connection->delete();
 
-        return Provider::response()->success([], HttpStatus::ACCEPTED, [
+        return (new ProviderConnectionResource($connection))->additional([
             'message' => 'Provider connection removed.',
-        ]);
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
     }
 
     /**
@@ -117,17 +136,13 @@ class ProviderConnectionController extends Controller
             $connection->markTested($e->getMessage());
         }
 
-        $resource = new ProviderConnectionResource($connection);
+        $code = $connection->last_error ? HttpStatus::UNPROCESSABLE_ENTITY : HttpStatus::OK;
 
-        if ($connection->last_error) {
-            return Provider::response()->error($resource, HttpStatus::UNPROCESSABLE_ENTITY, [
-                'message' => $connection->last_error,
-            ]);
-        }
-
-        return Provider::response()->success($resource, HttpStatus::OK, [
-            'message' => 'Connection works.',
-        ]);
+        return (new ProviderConnectionResource($connection))->additional([
+            'message' => $connection->last_error ?? 'Connection works.',
+            'status' => $connection->last_error ? 'error' : 'success',
+            'status_code' => $code,
+        ])->response()->setStatusCode($code->value);
     }
 
     /**
@@ -157,16 +172,13 @@ class ProviderConnectionController extends Controller
                 ),
             };
         } catch (ProviderException $e) {
-            return Provider::response()->error([], HttpStatus::UNPROCESSABLE_ENTITY, [
-                'message' => $e->getMessage(),
-            ]);
+            abort(HttpStatus::UNPROCESSABLE_ENTITY->value, $e->getMessage());
         }
 
-        return Provider::response()->success(['data' => [
-            'message_id' => $result->messageId,
-            'status' => $result->status,
-        ]], HttpStatus::OK, [
+        return (new SendResultResource($result))->additional([
             'message' => 'Test message sent.',
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
         ]);
     }
 }
