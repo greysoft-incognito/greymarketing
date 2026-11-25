@@ -15,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(
+            \App\Messaging\ProviderManager::class,
+            fn () => new \App\Messaging\ProviderManager(config('messaging.providers', []))
+        );
     }
 
     /**
