@@ -1,13 +1,12 @@
 {
+    "name": "greymarketing",
     "private": true,
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vite build"
+    "packageManager": "pnpm@10.28.0",
+    "engines": {
+        "node": ">=22"
     },
-    "devDependencies": {
-        "axios": "^1.6.4",
-        "laravel-vite-plugin": "^1.0",
-        "vite": "^5.0"
+    "scripts": {
+        "api:dev": "pnpm --filter ./api dev",
+        "api:build": "pnpm --filter ./api build"
     }
 }

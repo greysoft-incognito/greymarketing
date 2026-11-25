@@ -1,10 +1,12 @@
-name: Running Composer Tests
+name: API Tests
 
 on:
   push:
     branches: ["main", "dev"]
+    paths: ["api/**", ".github/workflows/run-tests.yml"]
   pull_request:
     branches: ["main", "dev"]
+    paths: ["api/**", ".github/workflows/run-tests.yml"]
 
 jobs:
   test:
@@ -26,6 +28,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    defaults:
+      run:
+        working-directory: api
 
     env:
       DB_CONNECTION: pgsql
@@ -74,4 +80,4 @@ jobs:
         uses: codecov/codecov-action@v4.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/logs/clover.xml
+          files: ./api/coverage/logs/clover.xml
