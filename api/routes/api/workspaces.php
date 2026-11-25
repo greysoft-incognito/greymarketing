@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Workspace\CampaignController;
 use App\Http\Controllers\Workspace\ContactController;
 use App\Http\Controllers\Workspace\ContactImportController;
 use App\Http\Controllers\Workspace\ContactListController;
@@ -29,5 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('templates', TemplateController::class);
         Route::post('templates/{template}/preview', [TemplateController::class, 'preview'])->name('templates.preview');
+
+        Route::apiResource('campaigns', CampaignController::class);
+        Route::post('campaigns/{campaign}/launch', [CampaignController::class, 'launch'])->name('campaigns.launch');
+        Route::post('campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
+        Route::get('campaigns/{campaign}/report', [CampaignController::class, 'report'])->name('campaigns.report');
+        Route::get('campaigns/{campaign}/messages', [CampaignController::class, 'messages'])->name('campaigns.messages');
     });
 });
