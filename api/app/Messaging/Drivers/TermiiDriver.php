@@ -2,11 +2,14 @@
 
 namespace App\Messaging\Drivers;
 
+use App\Messaging\Contracts\ReceivesDeliveryReports;
 use App\Messaging\Contracts\SendsSms;
+use App\Messaging\Data\DeliveryReport;
 use App\Messaging\Data\SendResult;
 use App\Messaging\Data\SmsMessage;
+use Illuminate\Http\Request;
 
-class TermiiDriver extends AbstractDriver implements SendsSms
+class TermiiDriver extends AbstractDriver implements ReceivesDeliveryReports, SendsSms
 {
     protected string $label = 'Termii';
 
@@ -29,6 +32,22 @@ class TermiiDriver extends AbstractDriver implements SendsSms
         ]));
 
         return new SendResult($response->json('message_id'), 'sent', $response->json());
+    }
+
+    public function parseDeliveryReport(Request $request): ?DeliveryReport
+    {
+        $status = strtolower((string) $request->input('status'));
+        $id = $request->input('message_id');
+
+        if (! $id) {
+            return null;
+        }
+
+        return match (true) {
+            str_contains($status, 'deliver') => new DeliveryReport($id, true),
+            (bool) preg_match('/fail|reject|dnd|expire|undeliver/', $status) => new DeliveryReport($id, false, $request->input('status')),
+            default => null,
+        };
     }
 
     protected function baseUrl(): string

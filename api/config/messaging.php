@@ -12,6 +12,11 @@ use App\Messaging\Drivers;
 | Clients render connection forms from this catalog.
 */
 return [
+    /*
+    | Messages per second sent through one connection when it sets no rate_per_second.
+    */
+    'default_rate_per_second' => (int) env('MESSAGING_RATE_PER_SECOND', 10),
+
     'providers' => [
         'africastalking' => [
             'name' => "Africa's Talking",
@@ -72,6 +77,7 @@ return [
                 'domain' => ['label' => 'Sending domain', 'rules' => ['required', 'string']],
                 'api_key' => ['label' => 'API key', 'rules' => ['required', 'string'], 'secret' => true],
                 'region' => ['label' => 'Region', 'rules' => ['nullable', 'in:us,eu']],
+                'webhook_signing_key' => ['label' => 'Webhook signing key', 'rules' => ['nullable', 'string'], 'secret' => true],
             ],
             'settings' => [
                 'from_email' => ['label' => 'From email', 'rules' => ['nullable', 'email']],

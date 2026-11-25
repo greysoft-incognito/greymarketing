@@ -43,6 +43,10 @@ class SmtpDriver extends AbstractDriver implements SendsEmail
             $email->text($message->text);
         }
 
+        foreach ($message->headers as $name => $value) {
+            $email->getHeaders()->addTextHeader($name, $value);
+        }
+
         try {
             $sent = $this->transport()->send($email);
         } catch (TransportExceptionInterface $e) {

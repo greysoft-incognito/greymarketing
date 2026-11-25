@@ -32,6 +32,7 @@ class SendPulseDriver extends AbstractDriver implements SendsEmail, SendsSms
                     'email' => $message->fromEmail ?? $this->setting('from_email'),
                 ],
                 'to' => [array_filter(['email' => $message->to, 'name' => $message->toName])],
+                'headers' => $message->headers ?: null,
             ]),
         ]));
 

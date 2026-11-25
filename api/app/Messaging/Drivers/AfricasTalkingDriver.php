@@ -2,14 +2,16 @@
 
 namespace App\Messaging\Drivers;
 
+use App\Messaging\Contracts\ReceivesDeliveryReports;
 use App\Messaging\Contracts\ReceivesSms;
 use App\Messaging\Contracts\SendsSms;
+use App\Messaging\Data\DeliveryReport;
 use App\Messaging\Data\InboundSms;
 use App\Messaging\Data\SendResult;
 use App\Messaging\Data\SmsMessage;
 use Illuminate\Http\Request;
 
-class AfricasTalkingDriver extends AbstractDriver implements ReceivesSms, SendsSms
+class AfricasTalkingDriver extends AbstractDriver implements ReceivesDeliveryReports, ReceivesSms, SendsSms
 {
     protected string $label = "Africa's Talking";
 
@@ -49,6 +51,24 @@ class AfricasTalkingDriver extends AbstractDriver implements ReceivesSms, SendsS
         }
 
         return new InboundSms($request->input('from'), $request->input('text'));
+    }
+
+    /**
+     * Only Success, Failed and Rejected are final; Sent, Submitted and Buffered are not.
+     */
+    public function parseDeliveryReport(Request $request): ?DeliveryReport
+    {
+        $status = $request->input('status');
+
+        if (! $request->filled('id') || ! in_array($status, ['Success', 'Failed', 'Rejected'], true)) {
+            return null;
+        }
+
+        return new DeliveryReport(
+            $request->input('id'),
+            $status === 'Success',
+            $status === 'Success' ? null : ($request->input('failureReason') ?: $status),
+        );
     }
 
     protected function client()
