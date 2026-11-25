@@ -6,7 +6,7 @@ use App\Enums\Channel;
 use App\Enums\ConnectionStatus;
 use App\Messaging\Contracts\Driver;
 use App\Messaging\ProviderManager;
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use App\Traits\HasPublicUlid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ProviderConnection extends Model
 {
     use HasFactory;
-    use HasUlids;
+    use HasPublicUlid;
 
     protected $fillable = [
         'provider',
@@ -43,21 +43,6 @@ class ProviderConnection extends Model
             'is_default' => 'boolean',
             'last_tested_at' => 'datetime',
         ];
-    }
-
-    /**
-     * Only the ulid column is generated, the primary key stays numeric.
-     *
-     * @return array<int, string>
-     */
-    public function uniqueIds(): array
-    {
-        return ['ulid'];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'ulid';
     }
 
     public function workspace(): BelongsTo

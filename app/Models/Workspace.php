@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WorkspaceRole;
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use App\Traits\HasPublicUlid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,26 +13,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Workspace extends Model
 {
     use HasFactory;
-    use HasUlids;
+    use HasPublicUlid;
 
     protected $fillable = [
         'name',
+        'default_country',
     ];
 
-    /**
-     * Only the ulid column is generated, the primary key stays numeric.
-     *
-     * @return array<int, string>
-     */
-    public function uniqueIds(): array
-    {
-        return ['ulid'];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'ulid';
-    }
+    protected $attributes = [
+        'default_country' => 'NG',
+    ];
 
     /**
      * Create a workspace owned by the given user.
@@ -61,6 +51,26 @@ class Workspace extends Model
     public function connections(): HasMany
     {
         return $this->hasMany(ProviderConnection::class);
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
+    public function lists(): HasMany
+    {
+        return $this->hasMany(ContactList::class);
+    }
+
+    public function imports(): HasMany
+    {
+        return $this->hasMany(ContactImport::class);
+    }
+
+    public function templates(): HasMany
+    {
+        return $this->hasMany(Template::class);
     }
 
     /**

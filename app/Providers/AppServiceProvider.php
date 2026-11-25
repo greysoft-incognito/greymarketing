@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
             \App\Messaging\ProviderManager::class,
             fn () => new \App\Messaging\ProviderManager(config('messaging.providers', []))
         );
+
+        $this->app->singleton(
+            \App\Services\Audience\ContactNormalizer::class,
+            fn () => new \App\Services\Audience\ContactNormalizer(\libphonenumber\PhoneNumberUtil::getInstance())
+        );
     }
 
     /**

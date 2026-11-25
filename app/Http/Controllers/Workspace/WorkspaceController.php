@@ -53,8 +53,13 @@ class WorkspaceController extends Controller
         $this->authorize('manage', $workspace);
 
         $valid = $this->validate($request, [
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['sometimes', 'string', 'max:100'],
+            'default_country' => ['sometimes', 'string', 'size:2', 'alpha'],
         ]);
+
+        if (isset($valid['default_country'])) {
+            $valid['default_country'] = strtoupper($valid['default_country']);
+        }
 
         $workspace->update($valid);
 
