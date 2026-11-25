@@ -8,20 +8,32 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest]
-        php: ["8.5"]
-        laravel: [13.*]
-        stability: [prefer-stable]
-        # include:
-        #   - laravel: 12.*
-        #     testbench: 10.*
-        #     php: 8.3
+    runs-on: ubuntu-latest
 
-    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
+    name: PHP 8.5 - PostgreSQL 16
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
 
     steps:
       - name: Checkout code
@@ -30,8 +42,8 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          php-version: "8.5"
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pgsql, pdo_pgsql, bcmath, intl, gd, exif, iconv, fileinfo
           coverage: xdebug
 
       - name: Setup problem matchers
@@ -39,30 +51,19 @@ jobs:
           echo "::add-matcher::${{ runner.tool_cache }}/php.json"
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
-      - name: Install Matrix dependencies
-        if: ${{ matrix.testbench }}
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev
-
       - name: Install dependencies
-        run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+        run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: List Installed Dependencies
-        run: composer show -D
-
-      - name: "Create env file"
+      - name: Create env file
         run: |
           cp .env.ci .env
           echo PAYSTACK_PUBLIC_KEY=${{ secrets.PAYSTACK_PUBLIC_KEY }} >> .env
           echo PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_SECRET_KEY }} >> .env
-          echo DB_CONNECTION=sqlite
-          echo DB_DATABASE=:memory:
-          cat .env
 
       - name: Run Migrations
         run: |
           php artisan key:generate
-          php artisan migrate
+          php artisan migrate --force
 
       - name: Execute tests
         run: composer run-test

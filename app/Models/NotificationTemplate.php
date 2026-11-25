@@ -75,8 +75,8 @@ class NotificationTemplate extends Model
     public function resolveRouteBinding($value, $field = null)
     {
         try {
-            return $this->where('id', $value)
-                ->orWhere('key', $value)
+            return $this->where('key', $value)
+                ->when(filter_var($value, FILTER_VALIDATE_INT) !== false, fn ($query) => $query->orWhere('id', $value))
                 ->firstOrFail();
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $th) {
             return self::buildDefault($value, true);

@@ -127,8 +127,8 @@ class User extends Authenticatable implements WalletOperations
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        return $this->where('id', $value)
-            ->orWhere('username', $value)
+        return $this->where('username', $value)
+            ->when(filter_var($value, FILTER_VALIDATE_INT) !== false, fn ($query) => $query->orWhere('id', $value))
             ->firstOrFail();
     }
 
