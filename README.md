@@ -7,7 +7,7 @@ Send marketing email and SMS through your own provider accounts (Africa's Talkin
 | Path | What |
 |---|---|
 | `api/` | Laravel API, built on [toneflix/laravel-op](https://github.com/toneflix/laravel-op) |
-| `app/` | Quasar web app (alova.js, shadcn-vue), not started yet |
+| `app/` | Quasar web app: Vue 3, TypeScript, alova.js, Tailwind CSS and shadcn-vue |
 
 ## Setup
 
@@ -35,3 +35,14 @@ Tests run against PostgreSQL in CI and SQLite locally by default:
 cd api
 php artisan test
 ```
+
+## App
+
+```bash
+cp app/.env.example app/.env   # API_URL points at the API, default http://localhost:8000
+pnpm app:dev                   # http://localhost:9000
+pnpm app:typecheck
+pnpm app:build                 # outputs app/dist/spa
+```
+
+UI components live in `app/src/components/ui` in the shadcn-vue layout (`components.json` is set up), themed with the Greysoft colours in `app/src/css/app.css`.
