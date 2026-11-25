@@ -5,6 +5,8 @@ namespace App\Traits;
 use App\Enums\HttpStatus;
 use App\Models\TempUser;
 use App\Models\User;
+use App\Services\Payment\FlutterwaveProcessor;
+use App\Services\Payment\PaymentInterface;
 use App\Services\Payment\PaystackProcessor;
 use App\Services\Payment\StripeProcessor;
 use App\Services\Payment\WalletProcessor;
@@ -32,33 +34,38 @@ trait ControllerCanExtend
     }
 
     /**
-     * Initiate a payment
+     * The processor for the preferred payment method.
      *
-     * @param  int|float  $amount
-     * @param  int|float  $discount
+     * @throws ValidationException
+     */
+    protected function resolvePaymentProcessor(Request $request, User|TempUser $user): PaymentInterface
+    {
+        return match ($this->paymentProcessor) {
+            'paystack' => new PaystackProcessor($request, $user),
+            'stripe' => new StripeProcessor($request, $user),
+            'wallet' => new WalletProcessor($request, $user),
+            'flutterwave' => new FlutterwaveProcessor($request, $user),
+            default => throw ValidationException::withMessages([
+                'payment_method' => 'Unknown Payment Method Selected.',
+            ]),
+        };
+    }
+
+    /**
+     * Initiate a payment
      *
      * @throws ValidationException
      */
     public function makePayment(
         Request $request,
         User|TempUser $user,
-        int $amount,
+        int|float $amount,
         ?Model $transactable = null,
-        int $discount = 0,
+        int|float $discount = 0,
     ): \Illuminate\Support\Collection {
         $fees = 0;
 
-        if ($this->paymentProcessor === 'paystack') {
-            $paymentIntent = (new PaystackProcessor($request, $user))->intent($amount - $discount);
-        } elseif ($this->paymentProcessor === 'stripe') {
-            $paymentIntent = (new StripeProcessor($request, $user))->intent($amount - $discount);
-        } elseif ($this->paymentProcessor === 'wallet') {
-            $paymentIntent = (new WalletProcessor($request, $user))->intent($amount - $discount);
-        } else {
-            throw ValidationException::withMessages([
-                'payment_method' => 'Unknown Payment Method Selected.',
-            ]);
-        }
+        $paymentIntent = $this->resolvePaymentProcessor($request, $user)->intent($amount - $discount);
 
         if (isset($paymentIntent['error'])) {
             $user instanceof TempUser && $user->delete();
@@ -98,18 +105,7 @@ trait ControllerCanExtend
         User|TempUser $user,
         string $reference,
     ): \Illuminate\Support\Collection {
-
-        if ($this->paymentProcessor === 'paystack') {
-            $paymentIntent = (new PaystackProcessor($request, $user))->verify($reference);
-        } elseif ($this->paymentProcessor === 'stripe') {
-            $paymentIntent = (new StripeProcessor($request, $user))->verify($reference);
-        } elseif ($this->paymentProcessor === 'wallet') {
-            $paymentIntent = (new WalletProcessor($request, $user))->verify($reference);
-        } else {
-            throw ValidationException::withMessages([
-                'payment_method' => 'Unknown Payment Method Selected.',
-            ]);
-        }
+        $paymentIntent = $this->resolvePaymentProcessor($request, $user)->verify($reference);
 
         /** @var \App\Models\Transaction */
         $transaction = $user->transactions()->where('reference', $reference)->first();
