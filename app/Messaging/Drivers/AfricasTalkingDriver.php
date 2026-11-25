@@ -2,11 +2,14 @@
 
 namespace App\Messaging\Drivers;
 
+use App\Messaging\Contracts\ReceivesSms;
 use App\Messaging\Contracts\SendsSms;
+use App\Messaging\Data\InboundSms;
 use App\Messaging\Data\SendResult;
 use App\Messaging\Data\SmsMessage;
+use Illuminate\Http\Request;
 
-class AfricasTalkingDriver extends AbstractDriver implements SendsSms
+class AfricasTalkingDriver extends AbstractDriver implements ReceivesSms, SendsSms
 {
     protected string $label = "Africa's Talking";
 
@@ -37,6 +40,15 @@ class AfricasTalkingDriver extends AbstractDriver implements SendsSms
         }
 
         return new SendResult($recipient['messageId'] ?? null, 'sent', $response->json());
+    }
+
+    public function parseInbound(Request $request): ?InboundSms
+    {
+        if (! $request->filled(['from', 'text'])) {
+            return null;
+        }
+
+        return new InboundSms($request->input('from'), $request->input('text'));
     }
 
     protected function client()

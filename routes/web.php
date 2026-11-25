@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\HttpStatus;
+use App\Http\Controllers\Audience\UnsubscribeController;
 use App\Helpers\Url;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
@@ -58,3 +59,8 @@ Route::get('download/formdata/{timestamp}/{form}/{batch?}', function ($timestamp
 
     abort(HttpStatus::NOT_FOUND->value, 'Link Does Not Exist');
 })->middleware('auth.basic')->name('download.formdata');
+
+Route::middleware('signed')->controller(UnsubscribeController::class)->group(function () {
+    Route::get('unsubscribe/{contact:ulid}', 'show')->name('unsubscribe');
+    Route::post('unsubscribe/{contact:ulid}', 'store')->name('unsubscribe.store');
+});

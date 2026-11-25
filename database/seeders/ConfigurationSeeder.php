@@ -242,6 +242,20 @@ class ConfigurationSeeder extends Seeder
                 'group' => 'misc',
                 'choices' => json_encode([]),
             ],
+            [
+                'key' => 'unsubscribe_page_url',
+                'title' => 'Unsubscribe Page URL',
+                'value' => '',
+                'type' => 'string',
+                'count' => null,
+                'max' => null,
+                'col' => 6,
+                'autogrow' => false,
+                'hint' => 'Frontend page that confirms an unsubscribe. It receives the signed action URL as ?action=.',
+                'secret' => false,
+                'group' => 'misc',
+                'choices' => json_encode([]),
+            ],
         ], ['key'], ['title', 'value', 'hint', 'group', 'max', 'col', 'autogrow', 'secret', 'choices']);
     }
 }
