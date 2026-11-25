@@ -14,6 +14,7 @@ use App\Http\Resources\CampaignResource;
 use App\Jobs\LaunchCampaign;
 use App\Models\Campaign;
 use App\Models\Workspace;
+use App\Services\Billing\UsageLimits;
 use App\Services\Campaigns\CampaignReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -107,7 +108,7 @@ class CampaignController extends Controller
     /**
      * Send now, or schedule when `scheduled_at` is given.
      */
-    public function launch(Request $request, Workspace $workspace, Campaign $campaign)
+    public function launch(Request $request, Workspace $workspace, Campaign $campaign, UsageLimits $limits)
     {
         $this->authorize('contribute', $workspace);
 
@@ -122,6 +123,15 @@ class CampaignController extends Controller
             $campaign->sendingConnection(),
             HttpStatus::UNPROCESSABLE_ENTITY->value,
             "Connect a {$campaign->channel->value} provider or choose a connection first."
+        );
+
+        $room = $limits->messageRoom($workspace, $campaign->channel);
+        $recipients = $room === null ? 0 : $campaign->audience()->count();
+
+        abort_if(
+            $room !== null && $recipients > $room,
+            HttpStatus::PAYMENT_REQUIRED->value,
+            "This campaign has {$recipients} recipients but your plan has {$room} {$campaign->channel->value} messages left this month."
         );
 
         $scheduledAt = isset($valid['scheduled_at']) ? Carbon::parse($valid['scheduled_at']) : $campaign->scheduled_at;

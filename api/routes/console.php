@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('campaigns:dispatch-due')->everyMinute()->withoutOverlapping();
+Schedule::command('billing:expire-subscriptions')->hourly()->withoutOverlapping();

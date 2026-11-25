@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Billing\PlanController;
+use App\Http\Controllers\Workspace\BillingController;
 use App\Http\Controllers\Workspace\CampaignController;
 use App\Http\Controllers\Workspace\ContactController;
 use App\Http\Controllers\Workspace\ContactImportController;
@@ -8,6 +10,8 @@ use App\Http\Controllers\Workspace\ProviderConnectionController;
 use App\Http\Controllers\Workspace\TemplateController;
 use App\Http\Controllers\Workspace\WorkspaceController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('plans', PlanController::class)->name('plans.index');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('providers', [ProviderConnectionController::class, 'catalog'])->name('providers.catalog');
@@ -36,5 +40,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
         Route::get('campaigns/{campaign}/report', [CampaignController::class, 'report'])->name('campaigns.report');
         Route::get('campaigns/{campaign}/messages', [CampaignController::class, 'messages'])->name('campaigns.messages');
+
+        Route::get('billing', [BillingController::class, 'show'])->name('billing.show');
+        Route::post('billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
+        Route::post('billing/verify', [BillingController::class, 'verify'])->name('billing.verify');
+        Route::post('billing/cancel', [BillingController::class, 'cancel'])->name('billing.cancel');
+        Route::get('billing/transactions', [BillingController::class, 'transactions'])->name('billing.transactions');
     });
 });

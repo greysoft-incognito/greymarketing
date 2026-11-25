@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Workspace extends Model
 {
@@ -76,6 +77,35 @@ class Workspace extends Model
     public function campaigns(): HasMany
     {
         return $this->hasMany(Campaign::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * The subscription giving access to a plan right now, if any.
+     */
+    public function currentSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->ofMany(
+            ['ends_at' => 'max', 'id' => 'max'],
+            fn ($query) => $query->current()
+        );
+    }
+
+    public function usage(): HasMany
+    {
+        return $this->hasMany(WorkspaceUsage::class);
+    }
+
+    /**
+     * The plan whose limits apply: the current subscription's, else the default plan.
+     */
+    public function plan(): ?Plan
+    {
+        return $this->currentSubscription?->plan ?? Plan::fallback();
     }
 
     /**

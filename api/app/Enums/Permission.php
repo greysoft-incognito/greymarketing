@@ -22,6 +22,10 @@ enum Permission: string
     case DASHBOARD = 'dashboard';
     case TRANSACTIONS = 'transactions';
 
+    case PLANS = 'plans';
+    case WORKSPACES = 'workspaces';
+    case SUBSCRIPTIONS = 'subscriptions';
+
     /**
      * Check and authorise the admin on the current permission
      *

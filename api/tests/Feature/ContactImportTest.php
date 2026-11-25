@@ -6,6 +6,7 @@ use App\Jobs\ProcessContactImport;
 use App\Models\Contact;
 use App\Models\ContactImport;
 use App\Models\ContactList;
+use App\Models\Plan;
 use App\Models\Workspace;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -130,6 +131,8 @@ class ContactImportTest extends TestCase
 
     public function testLargeFilesAreImportedInChunks(): void
     {
+        Plan::fallback()->update(['contacts_limit' => null]);
+
         $rows = ['email'];
 
         for ($i = 0; $i < 1203; $i++) {

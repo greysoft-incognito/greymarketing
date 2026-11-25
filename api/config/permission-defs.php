@@ -68,6 +68,10 @@ return [
         'users.delete',
 
         'notifications-temps',
+
+        'plans',
+        'workspaces',
+        'subscriptions',
     ],
     /*
     |--------------------------------------------------------------------------

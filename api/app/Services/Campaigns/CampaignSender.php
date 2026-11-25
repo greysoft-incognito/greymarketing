@@ -15,6 +15,7 @@ use App\Messaging\TemplateRenderer;
 use App\Models\Campaign;
 use App\Models\CampaignMessage;
 use App\Models\ProviderConnection;
+use App\Services\Billing\UsageLimits;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -23,7 +24,10 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 class CampaignSender
 {
-    public function __construct(protected TemplateRenderer $renderer) {}
+    public function __construct(
+        protected TemplateRenderer $renderer,
+        protected UsageLimits $limits,
+    ) {}
 
     /**
      * Send the given pending messages.
@@ -57,6 +61,8 @@ class CampaignSender
             ->where('status', MessageStatus::PENDING)
             ->get();
 
+        $room = $this->limits->messageRoom($campaign->workspace, $campaign->channel);
+        $sent = 0;
         $retry = [];
         $delay = 0;
 
@@ -68,18 +74,25 @@ class CampaignSender
                 break;
             }
 
-            RateLimiter::hit($limiterKey, 1);
-
             if (! $message->contact?->isSubscribedTo($campaign->channel)) {
                 $this->mark($message, MessageStatus::SKIPPED, error: 'Unsubscribed before sending.');
 
                 continue;
             }
 
+            if ($room !== null && $sent >= $room) {
+                $this->mark($message, MessageStatus::FAILED, error: "Your plan's monthly {$campaign->channel->value} limit has been reached.");
+
+                continue;
+            }
+
+            RateLimiter::hit($limiterKey, 1);
+
             try {
                 $result = $this->deliver($campaign, $connection, $driver, $message);
 
                 $this->mark($message, MessageStatus::SENT, $result);
+                $sent++;
             } catch (ProviderException|ConnectionException $e) {
                 $message->attempts++;
 
@@ -94,6 +107,8 @@ class CampaignSender
                 $this->mark($message, MessageStatus::FAILED, error: $e->getMessage());
             }
         }
+
+        $this->limits->recordSent($campaign->workspace, $campaign->channel, $sent);
 
         $campaign->completeIfDone();
 

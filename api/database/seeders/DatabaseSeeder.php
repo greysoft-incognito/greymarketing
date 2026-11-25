@@ -30,5 +30,7 @@ class DatabaseSeeder extends Seeder
                 '--no-interaction' => true
             ]);
         }
+
+        $this->call(PlanSeeder::class);
     }
 }
