@@ -9,6 +9,15 @@ Send marketing email and SMS through your own provider accounts (Africa's Talkin
 | `api/` | Laravel API, built on [toneflix/laravel-op](https://github.com/toneflix/laravel-op) |
 | `app/` | Quasar web app (alova.js, shadcn-vue), not started yet |
 
+## Setup
+
+JavaScript dependencies use a pnpm workspace (`api`, `app`):
+
+```bash
+corepack enable
+pnpm install
+```
+
 ## API
 
 ```bash

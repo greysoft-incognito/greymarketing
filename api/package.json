@@ -1,4 +1,5 @@
 {
+    "name": "@greymarketing/api",
     "private": true,
     "type": "module",
     "scripts": {
