@@ -5,6 +5,7 @@ import type {
   CampaignDetail,
   CampaignInput,
   CampaignMessage,
+  CampaignPerformance,
   CampaignReport,
   Channel,
   ConnectionInput,
@@ -18,10 +19,12 @@ import type {
   Paginated,
   Provider,
   ProviderConnection,
+  ReportQuery,
   Template,
   TemplateInput,
   User,
   Workspace,
+  WorkspaceReport,
   WorkspaceStats,
 } from './types';
 import { alova } from './client';
@@ -182,4 +185,15 @@ export const campaigns = {
 
   messages: (workspace: string, id: string, params: { status?: MessageStatus; page?: number; limit?: number } = {}) =>
     alova.Get<Paginated<CampaignMessage>>(`/workspaces/${workspace}/campaigns/${id}/messages`, { cacheFor: 0, params }),
+};
+
+/**
+ * Workspace-wide delivery reports for a period.
+ */
+export const reports = {
+  summary: (workspace: string, params: ReportQuery = {}) =>
+    alova.Get<Envelope<WorkspaceReport>>(`/workspaces/${workspace}/reports`, { name: 'reports.summary', params, hitSource: ['campaigns.write', 'contacts.write'] }),
+
+  campaigns: (workspace: string, params: ReportQuery & { page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<CampaignPerformance>>(`/workspaces/${workspace}/reports/campaigns`, { name: 'reports.campaigns', params, hitSource: 'campaigns.write' }),
 };
