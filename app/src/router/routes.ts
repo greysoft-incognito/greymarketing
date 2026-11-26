@@ -4,6 +4,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     guest?: boolean;
     public?: boolean;
+    staff?: boolean;
     title?: string;
   }
 }
@@ -36,6 +37,17 @@ const routes: RouteRecordRaw[] = [
       { path: 'providers', name: 'providers', component: () => import('@/pages/ProvidersPage.vue'), meta: { title: 'Providers' } },
       { path: 'billing', name: 'billing', component: () => import('@/pages/BillingPage.vue'), meta: { title: 'Billing' } },
       { path: 'settings', name: 'settings', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Workspace settings' } },
+    ],
+  },
+  {
+    path: '/admin',
+    component: () => import('@/layouts/AdminLayout.vue'),
+    meta: { staff: true },
+    children: [
+      { path: '', name: 'admin', component: () => import('@/pages/admin/AdminOverviewPage.vue'), meta: { title: 'Overview' } },
+      { path: 'customers', name: 'admin.customers', component: () => import('@/pages/admin/AdminCustomersPage.vue'), meta: { title: 'Customers' } },
+      { path: 'plans', name: 'admin.plans', component: () => import('@/pages/admin/AdminPlansPage.vue'), meta: { title: 'Plans' } },
+      { path: 'usage', name: 'admin.usage', component: () => import('@/pages/admin/AdminUsagePage.vue'), meta: { title: 'Usage' } },
     ],
   },
   {

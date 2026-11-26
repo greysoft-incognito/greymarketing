@@ -28,6 +28,10 @@ class WorkspaceResource extends JsonResource
                 : null),
             'contacts_count' => $this->whenCounted('contacts'),
             'campaigns_count' => $this->whenCounted('campaigns'),
+            'usage_this_month' => $this->when($this->hasAttribute('emails_this_month'), fn () => [
+                'emails' => (int) $this->emails_this_month,
+                'sms' => (int) $this->sms_this_month,
+            ]),
             'created_at' => $this->created_at,
         ];
     }

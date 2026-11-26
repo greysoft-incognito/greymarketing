@@ -22,6 +22,7 @@ class SubscriptionController extends Controller
         $this->validate($request, [
             'status' => ['nullable', Rule::enum(SubscriptionStatus::class)],
             'plan' => ['nullable', 'string'],
+            'workspace' => ['nullable', 'string'],
             'limit' => ['nullable', 'integer', 'between:1,100'],
         ]);
 
@@ -31,6 +32,10 @@ class SubscriptionController extends Controller
             ->when($request->filled('plan'), fn (Builder $query) => $query->whereHas(
                 'plan',
                 fn (Builder $plan) => $plan->where('ulid', $request->input('plan'))
+            ))
+            ->when($request->filled('workspace'), fn (Builder $query) => $query->whereHas(
+                'workspace',
+                fn (Builder $workspace) => $workspace->where('ulid', $request->input('workspace'))
             ))
             ->latest('id')
             ->paginate($request->input('limit', 30));

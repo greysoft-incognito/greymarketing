@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { BarChart3, Check, ChevronsUpDown, CreditCard, FileText, LayoutDashboard, Plug, Send, Settings2, Users } from 'lucide-vue-next';
+import { BarChart3, Check, ChevronsUpDown, CreditCard, FileText, LayoutDashboard, Plug, Send, Settings2, ShieldCheck, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { formatNumber } from '@/lib/format';
+import { useSession } from '@/stores/session';
 import { useWorkspace } from '@/stores/workspace';
 
 interface NavItem {
@@ -18,6 +19,7 @@ interface NavItem {
 const emit = defineEmits<{ navigate: [] }>();
 
 const route = useRoute();
+const session = useSession();
 const workspace = useWorkspace();
 
 const workspaceNav: NavItem[] = [
@@ -118,6 +120,15 @@ function isActive(name: string) {
       >
         <component :is="item.icon" class="size-4" />
         {{ item.label }}
+      </RouterLink>
+      <RouterLink
+        v-if="session.isStaff"
+        :to="{ name: 'admin' }"
+        class="flex items-center gap-2.5 rounded-md px-2 py-[7px] font-medium text-muted-foreground no-underline transition-colors hover:bg-background hover:text-foreground"
+        @click="emit('navigate')"
+      >
+        <ShieldCheck class="size-4" />
+        Admin console
       </RouterLink>
     </nav>
 

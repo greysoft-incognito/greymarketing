@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ConfigurationController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\StatsController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
@@ -19,6 +20,9 @@ Route::middleware(['auth:sanctum', $permissionMiddlewares])->prefix('admin')->gr
     // Notifications Templates
     Route::apiResource('configurations/notifications/templates', NotificationTemplateController::class)
         ->except(['store']);
+
+    Route::get('stats', [StatsController::class, 'overview'])->name('admin.stats');
+    Route::get('stats/usage', [StatsController::class, 'usage'])->name('admin.stats.usage');
 
     Route::apiResource('plans', PlanController::class)->names('admin.plans');
 
