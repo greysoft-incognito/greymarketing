@@ -29,7 +29,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'contacts/import', name: 'contacts.import', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Import contacts' } },
       { path: 'templates', name: 'templates', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Templates' } },
       { path: 'reports', name: 'reports', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Reports' } },
-      { path: 'providers', name: 'providers', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Providers' } },
+      { path: 'providers', name: 'providers', component: () => import('@/pages/ProvidersPage.vue'), meta: { title: 'Providers' } },
       { path: 'billing', name: 'billing', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Billing' } },
       { path: 'settings', name: 'settings', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Workspace settings' } },
     ],
