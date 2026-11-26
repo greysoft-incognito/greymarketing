@@ -96,11 +96,20 @@ export interface Billing {
   period: { starts_at: string; ends_at: string };
 }
 
+export interface EmailOpens {
+  /** Emails accepted by a provider. */
+  emails: number;
+  /** Emails opened at least once. */
+  opened: number;
+  open_rate: number;
+}
+
 export interface PeriodStats {
   sent: number;
   delivered: number;
   failed: number;
   delivery_rate: number;
+  email_opens: EmailOpens;
 }
 
 export interface WorkspaceStats {
@@ -149,6 +158,9 @@ export interface CampaignReport {
   counts: Record<MessageStatus, number>;
   delivery_rate: number;
   failure_rate: number;
+  /** Unique opens; null for SMS campaigns. */
+  opened: number | null;
+  open_rate: number | null;
   opt_outs: number;
   started_at: string | null;
   completed_at: string | null;
@@ -169,6 +181,9 @@ export interface ConnectionReport {
   delivered: number;
   failed: number;
   delivery_rate: number;
+  /** Null for SMS connections. */
+  opened: number | null;
+  open_rate: number | null;
 }
 
 export interface WorkspaceReport {
@@ -178,6 +193,8 @@ export interface WorkspaceReport {
   counts: Record<MessageStatus, number>;
   delivery_rate: number;
   failure_rate: number;
+  /** Null when the report is filtered to SMS. */
+  opens: EmailOpens | null;
   opt_outs: number;
   daily: Array<{ date: string; email: number; sms: number }>;
   failure_reasons: Array<{ reason: string; total: number }>;
@@ -185,8 +202,9 @@ export interface WorkspaceReport {
 }
 
 export interface CampaignPerformance extends Campaign {
-  counts: { sent: number; delivered: number; failed: number };
+  counts: { sent: number; delivered: number; failed: number; opened: number | null };
   delivery_rate: number;
+  open_rate: number | null;
 }
 
 export interface CampaignMessage {
@@ -199,6 +217,8 @@ export interface CampaignMessage {
   attempts: number;
   sent_at: string | null;
   delivered_at: string | null;
+  opened_at: string | null;
+  opens_count: number;
 }
 
 export interface SmsInfo {

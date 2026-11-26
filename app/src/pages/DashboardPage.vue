@@ -57,6 +57,9 @@ const kpis = computed(() => {
 
   const sentChange = percentChange(data.this_month.sent, data.last_month.sent);
   const rateChange = data.last_month.sent ? Math.round((data.this_month.delivery_rate - data.last_month.delivery_rate) * 10) / 10 : null;
+  const opens = data.this_month.email_opens;
+  const lastOpens = data.last_month.email_opens;
+  const openChange = opens.emails && lastOpens.emails ? Math.round((opens.open_rate - lastOpens.open_rate) * 10) / 10 : null;
 
   return [
     {
@@ -72,6 +75,13 @@ const kpis = computed(() => {
       delta: rateChange === null ? null : `${rateChange >= 0 ? '+' : '−'}${Math.abs(rateChange)} pts`,
       trend: rateChange === null ? 'flat' : rateChange >= 0 ? 'up' : 'down',
       note: rateChange === null ? 'of messages with a receipt' : 'vs last month',
+    },
+    {
+      label: 'Email open rate',
+      value: opens.emails ? `${opens.open_rate}%` : '–',
+      delta: openChange === null ? null : `${openChange >= 0 ? '+' : '−'}${Math.abs(openChange)} pts`,
+      trend: openChange === null ? 'flat' : openChange >= 0 ? 'up' : 'down',
+      note: openChange === null ? `${formatNumber(opens.opened)} opened this month` : 'vs last month',
     },
     {
       label: 'Contacts',
@@ -137,7 +147,7 @@ const loaded = computed(() => !!stats.value && !!connections.value && !!campaign
     <template v-if="kpis.length">
       <StatCard v-for="kpi in kpis" :key="kpi.label" v-bind="kpi" />
     </template>
-    <Skeleton v-for="n in (kpis.length || statsError ? 0 : 4)" v-else :key="n" class="h-[110px] rounded-xl" />
+    <Skeleton v-for="n in (kpis.length || statsError ? 0 : 5)" v-else :key="n" class="h-[110px] rounded-xl" />
   </div>
 
   <div class="grid items-start gap-5" :class="setupDone < setup.length || !loaded ? 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]' : ''">
