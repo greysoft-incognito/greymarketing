@@ -47,6 +47,35 @@ class BrandingTest extends TestCase
         $this->getJson('/api/branding')->assertJsonPath('data.auth_image', null);
     }
 
+    public function testAdminsCanReplaceAndClearThePanelText(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->getJson('/api/branding')->assertJsonPath('data.auth_messages.sign_in', null);
+
+        $this->postJson('/api/admin/configurations', [
+            'auth_signin_message' => 'Welcome to Kola Marketing.',
+            'auth_invite_message' => 'Your team is waiting.',
+        ])->assertStatus(202);
+
+        $this->getJson('/api/branding')
+            ->assertJsonPath('data.auth_messages.sign_in', 'Welcome to Kola Marketing.')
+            ->assertJsonPath('data.auth_messages.sign_up', null)
+            ->assertJsonPath('data.auth_messages.invite', 'Your team is waiting.');
+
+        $this->postJson('/api/admin/configurations', ['auth_signin_message' => ''])->assertStatus(202);
+
+        $this->getJson('/api/branding')->assertJsonPath('data.auth_messages.sign_in', null);
+    }
+
+    public function testPanelTextHasALengthLimit(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->postJson('/api/admin/configurations', ['auth_signup_heading' => str_repeat('a', 301)])
+            ->assertUnprocessable();
+    }
+
     public function testTheSignInImageMustBeAnImage(): void
     {
         $this->actingAsAdmin();

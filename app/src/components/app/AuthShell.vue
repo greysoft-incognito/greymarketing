@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { useRequest } from 'alova/client';
-import { computed } from 'vue';
-import { branding } from '@/api';
-import defaultImage from '@/assets/auth-panel.svg';
+import { useBranding } from '@/composables/useBranding';
 import BrandMark from './BrandMark.vue';
 
-const { data } = useRequest(() => branding.show());
-
-const image = computed(() => data.value?.data.auth_image || defaultImage);
+const { image } = useBranding();
 </script>
 
 <template>

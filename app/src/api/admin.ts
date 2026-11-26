@@ -7,6 +7,15 @@ export interface AdminPlan extends Plan {
   active_subscriptions_count?: number;
 }
 
+export interface ConfigurationItem {
+  key: string;
+  title: string;
+  value: unknown;
+  type: string;
+  hint: string;
+  group: string;
+}
+
 export interface PlanInput {
   name?: string;
   slug?: string;
@@ -116,6 +125,11 @@ export const admin = {
 
   subscriptions: (params: { workspace?: string; status?: Subscription['status']; page?: number; limit?: number } = {}) =>
     alova.Get<Paginated<AdminSubscription>>('/admin/subscriptions', { name: 'admin.subscriptions.list', params, hitSource: 'admin.subscriptions.write' }),
+
+  configurations: () => alova.Get<Envelope<ConfigurationItem[]>>('/admin/configurations', { name: 'admin.configurations', hitSource: 'branding.write' }),
+
+  saveConfigurations: (data: Record<string, string | null>) =>
+    alova.Post<Envelope<ConfigurationItem[]>>('/admin/configurations', data, { name: 'branding.write' }),
 
   uploadAuthImage: (file: File) => {
     const form = new FormData();

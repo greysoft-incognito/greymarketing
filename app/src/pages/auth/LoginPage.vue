@@ -8,11 +8,13 @@ import FormField from '@/components/app/FormField.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useBranding } from '@/composables/useBranding';
 import { useSession } from '@/stores/session';
 
 const route = useRoute();
 const router = useRouter();
 const session = useSession();
+const message = useBranding().message('sign_in');
 
 const form = reactive({ email: typeof route.query.email === 'string' ? route.query.email : '', password: '' });
 const error = ref<ApiError | null>(null);
@@ -45,7 +47,7 @@ async function submit() {
     <template #aside>
       <div class="grid gap-6">
         <blockquote class="m-0 max-w-[46ch] text-lg leading-normal">
-          Plug in the SMS and email providers you already pay for. Send campaigns, see every delivery receipt, keep one contact list.
+          {{ message }}
         </blockquote>
         <div class="grid gap-2.5 font-mono text-xs opacity-85" aria-hidden="true">
           <div v-for="line in feed" :key="line[2]" class="flex gap-2.5 whitespace-pre">

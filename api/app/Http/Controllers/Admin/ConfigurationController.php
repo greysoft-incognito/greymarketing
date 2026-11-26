@@ -53,6 +53,10 @@ class ConfigurationController extends Controller
 
         $rules[Branding::AUTH_IMAGE] = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
 
+        foreach (Branding::AUTH_MESSAGES as $key) {
+            $rules[$key] = ['nullable', 'string', 'max:' . Branding::MESSAGE_MAX];
+        }
+
         $valid = $this->validate($request, $rules);
 
         $config = Provider::config($valid);

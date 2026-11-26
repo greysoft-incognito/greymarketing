@@ -15,6 +15,7 @@ class BrandingResource extends JsonResource
         return [
             'app_name' => $this->appName(),
             'auth_image' => $this->authImage(),
+            'auth_messages' => $this->authMessages(),
         ];
     }
 }
