@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
 use Laravel\Sanctum\Sanctum;
@@ -115,5 +116,18 @@ class WorkspaceTest extends TestCase
         Sanctum::actingAs(User::factory()->create());
 
         $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertForbidden();
+    }
+
+    public function testWorkspaceListShowsThePlanInUse(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->assertNotNull(Plan::fallback());
+
+        $this->getJson('/api/workspaces')
+            ->assertOk()
+            ->assertJsonPath('data.0.plan.name', Plan::fallback()?->name);
     }
 }

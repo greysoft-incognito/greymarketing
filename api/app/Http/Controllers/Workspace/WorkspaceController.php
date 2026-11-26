@@ -13,7 +13,10 @@ class WorkspaceController extends Controller
 {
     public function index(Request $request)
     {
-        $workspaces = $request->user()->workspaces()->latest('workspaces.id')->paginate($request->input('limit', 30));
+        $workspaces = $request->user()->workspaces()
+            ->with('currentSubscription.plan')
+            ->latest('workspaces.id')
+            ->paginate($request->input('limit', 30));
 
         return (new WorkspaceCollection($workspaces))->additional([
             'message' => HttpStatus::message(HttpStatus::OK),
