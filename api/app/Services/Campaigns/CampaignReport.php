@@ -2,6 +2,7 @@
 
 namespace App\Services\Campaigns;
 
+use App\Enums\Channel;
 use App\Models\Campaign;
 
 /**
@@ -17,6 +18,7 @@ class CampaignReport
         $counts = $campaign->statusCounts();
         $attempted = $counts['sent'] + $counts['delivered'] + $counts['failed'];
         $reached = $counts['sent'] + $counts['delivered'];
+        $opened = $this->opened($campaign);
 
         return [
             'status' => $campaign->status->value,
@@ -24,10 +26,24 @@ class CampaignReport
             'counts' => $counts,
             'delivery_rate' => $reached ? round($counts['delivered'] / $reached * 100, 1) : 0.0,
             'failure_rate' => $attempted ? round($counts['failed'] / $attempted * 100, 1) : 0.0,
+            'opened' => $opened,
+            'open_rate' => $opened === null ? null : ($reached ? round($opened / $reached * 100, 1) : 0.0),
             'opt_outs' => $this->optOuts($campaign),
             'started_at' => $campaign->started_at,
             'completed_at' => $campaign->completed_at,
         ];
+    }
+
+    /**
+     * Recipients who opened the email at least once, or null for channels that cannot track opens.
+     */
+    protected function opened(Campaign $campaign): ?int
+    {
+        if ($campaign->channel !== Channel::EMAIL) {
+            return null;
+        }
+
+        return $campaign->messages()->whereNotNull('opened_at')->count();
     }
 
     /**

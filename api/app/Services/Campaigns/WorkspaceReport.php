@@ -39,6 +39,7 @@ class WorkspaceReport
             'counts' => $counts,
             'delivery_rate' => $reached ? round($counts['delivered'] / $reached * 100, 1) : 0.0,
             'failure_rate' => $attempted ? round($counts['failed'] / $attempted * 100, 1) : 0.0,
+            'opens' => $this->opens($workspace, $from, $channel),
             'opt_outs' => $this->optOuts($workspace, $from, $channel),
             'daily' => $this->stats->daily($workspace, $from, $channel),
             'failure_reasons' => $this->failureReasons($workspace, $from, $channel),
@@ -72,6 +73,28 @@ class WorkspaceReport
         return collect(MessageStatus::cases())
             ->mapWithKeys(fn (MessageStatus $status) => [$status->value => (int) ($counts[$status->value] ?? 0)])
             ->all();
+    }
+
+    /**
+     * Unique opens among emails that reached a provider, or null when only SMS is reported.
+     *
+     * @return array{emails: int, opened: int, open_rate: float}|null
+     */
+    protected function opens(Workspace $workspace, Carbon $from, ?Channel $channel): ?array
+    {
+        if ($channel === Channel::SMS) {
+            return null;
+        }
+
+        $row = $this->messages($workspace, $from, Channel::EMAIL)
+            ->whereIn('campaign_messages.status', [MessageStatus::SENT->value, MessageStatus::DELIVERED->value])
+            ->selectRaw('COUNT(*) as emails, SUM(CASE WHEN campaign_messages.opened_at IS NOT NULL THEN 1 ELSE 0 END) as opened')
+            ->first();
+
+        $emails = (int) $row->emails;
+        $opened = (int) $row->opened;
+
+        return ['emails' => $emails, 'opened' => $opened, 'open_rate' => $emails ? round($opened / $emails * 100, 1) : 0.0];
     }
 
     /**
@@ -110,10 +133,12 @@ class WorkspaceReport
             ->selectRaw('SUM(CASE WHEN campaign_messages.status = ? THEN 1 ELSE 0 END) as sent', [$sent])
             ->selectRaw('SUM(CASE WHEN campaign_messages.status = ? THEN 1 ELSE 0 END) as delivered', [$delivered])
             ->selectRaw('SUM(CASE WHEN campaign_messages.status = ? THEN 1 ELSE 0 END) as failed', [$failed])
+            ->selectRaw('SUM(CASE WHEN campaign_messages.opened_at IS NOT NULL THEN 1 ELSE 0 END) as opened')
             ->groupBy('provider_connections.ulid', 'provider_connections.name', 'provider_connections.provider', 'campaigns.channel')
             ->get()
             ->map(function (object $row) {
                 $reached = (int) $row->sent + (int) $row->delivered;
+                $email = $row->channel === Channel::EMAIL->value;
 
                 return [
                     'id' => $row->id,
@@ -124,6 +149,8 @@ class WorkspaceReport
                     'delivered' => (int) $row->delivered,
                     'failed' => (int) $row->failed,
                     'delivery_rate' => $reached ? round($row->delivered / $reached * 100, 1) : 0.0,
+                    'opened' => $email ? (int) $row->opened : null,
+                    'open_rate' => $email ? ($reached ? round($row->opened / $reached * 100, 1) : 0.0) : null,
                 ];
             })
             ->sortByDesc(fn (array $row) => $row['sent'] + $row['failed'])
