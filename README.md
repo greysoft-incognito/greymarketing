@@ -46,3 +46,7 @@ pnpm app:build                 # outputs app/dist/spa
 ```
 
 UI components live in `app/src/components/ui` in the shadcn-vue layout (`components.json` is set up), themed with the Greysoft colours in `app/src/css/app.css`.
+
+## Deployment
+
+See [docs/api-deployment.md](docs/api-deployment.md) for the API server setup and the SSH deploy workflow.
