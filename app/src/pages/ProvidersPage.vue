@@ -111,8 +111,11 @@ async function remove() {
     </template>
   </PageHeader>
 
-  <Alert v-if="list.error.value" variant="destructive">
+  <Alert v-if="list.error.value" variant="destructive" class="flex items-center justify-between gap-3">
     <AlertDescription>We couldn't load your providers. {{ list.error.value.message }}</AlertDescription>
+    <Button variant="secondary" size="sm" class="shrink-0" @click="list.send()">
+      Try again
+    </Button>
   </Alert>
 
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -131,7 +134,7 @@ async function remove() {
         @remove="confirmRemove(connection)"
       />
     </template>
-    <Skeleton v-for="n in (list.data.value ? 0 : 2)" v-else :key="n" class="h-[168px] rounded-xl" />
+    <Skeleton v-for="n in (list.data.value || list.error.value ? 0 : 2)" v-else :key="n" class="h-[168px] rounded-xl" />
 
     <button
       v-if="list.data.value && workspace.canManage"

@@ -58,6 +58,7 @@ watch(() => query.data.value, () => {
 const allLists = computed(() => listQuery.data.value?.data ?? []);
 const rows = computed(() => query.data.value?.data ?? []);
 const total = computed(() => totals.data.value?.meta.total ?? 0);
+const loadError = computed(() => query.error.value ?? listQuery.error.value ?? totals.error.value);
 const activeList = computed(() => allLists.value.find(list => list.id === listId.value) ?? null);
 const filtering = computed(() => !!search.value.trim() || !!subscribed.value);
 
@@ -207,7 +208,7 @@ async function removeSelectedFromList() {
         <span class="font-semibold">All contacts</span>
         <Users class="size-4 text-muted-foreground" />
       </span>
-      <span class="text-xl font-semibold tabular-nums">{{ formatNumber(total) }}</span>
+      <span class="text-xl font-semibold tabular-nums">{{ totals.data.value ? formatNumber(total) : '–' }}</span>
       <span class="text-xs text-muted-foreground">Everyone in this workspace</span>
     </button>
 
@@ -246,12 +247,15 @@ async function removeSelectedFromList() {
         </DropdownMenu>
       </div>
     </template>
-    <Skeleton v-for="n in (listQuery.data.value ? 0 : 3)" v-else :key="n" class="h-[104px] rounded-xl" />
+    <Skeleton v-for="n in (listQuery.data.value || listQuery.error.value ? 0 : 3)" v-else :key="n" class="h-[104px] rounded-xl" />
 
   </div>
 
-  <Alert v-if="query.error.value" variant="destructive">
-    <AlertDescription>We couldn't load contacts. {{ query.error.value.message }}</AlertDescription>
+  <Alert v-if="loadError" variant="destructive" class="flex items-center justify-between gap-3">
+    <AlertDescription>We couldn't load your contacts. {{ loadError.message }}</AlertDescription>
+    <Button variant="secondary" size="sm" class="shrink-0" @click="refresh">
+      Try again
+    </Button>
   </Alert>
 
   <Card>
@@ -384,7 +388,10 @@ async function removeSelectedFromList() {
               </template>
             </TableEmpty>
           </template>
-          <TableRow v-for="n in (query.data.value ? 0 : 6)" v-else :key="n">
+          <TableEmpty v-else-if="query.error.value" :colspan="9">
+            Contacts didn't load. Use Try again above.
+          </TableEmpty>
+          <TableRow v-for="n in 6" v-else :key="n">
             <TableCell :colspan="9">
               <Skeleton class="h-6 w-full" />
             </TableCell>

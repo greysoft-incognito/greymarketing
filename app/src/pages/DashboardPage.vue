@@ -110,15 +110,18 @@ const loaded = computed(() => !!stats.data.value && !!connections.data.value && 
     </template>
   </PageHeader>
 
-  <Alert v-if="stats.error.value" variant="destructive">
+  <Alert v-if="stats.error.value" variant="destructive" class="flex items-center justify-between gap-3">
     <AlertDescription>We couldn't load your figures. {{ stats.error.value.message }}</AlertDescription>
+    <Button variant="secondary" size="sm" class="shrink-0" @click="stats.send()">
+      Try again
+    </Button>
   </Alert>
 
   <div class="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
     <template v-if="kpis.length">
       <StatCard v-for="kpi in kpis" :key="kpi.label" v-bind="kpi" />
     </template>
-    <Skeleton v-for="n in (kpis.length ? 0 : 4)" v-else :key="n" class="h-[110px] rounded-xl" />
+    <Skeleton v-for="n in (kpis.length || stats.error.value ? 0 : 4)" v-else :key="n" class="h-[110px] rounded-xl" />
   </div>
 
   <div class="grid items-start gap-5" :class="setupDone < setup.length || !loaded ? 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]' : ''">
