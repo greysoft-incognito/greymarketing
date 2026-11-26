@@ -58,6 +58,9 @@ class CampaignController extends Controller
         ])->response()->setStatusCode(HttpStatus::CREATED->value);
     }
 
+    /**
+     * A campaign, plus how many contacts it would reach right now while it can still be edited.
+     */
     public function show(Workspace $workspace, Campaign $campaign)
     {
         $this->authorize('view', $workspace);
@@ -66,6 +69,7 @@ class CampaignController extends Controller
             'message' => HttpStatus::message(HttpStatus::OK),
             'status' => 'success',
             'status_code' => HttpStatus::OK,
+            'audience' => $campaign->status->isEditable() ? $campaign->audience()->count() : null,
         ]);
     }
 
