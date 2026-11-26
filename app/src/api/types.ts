@@ -102,12 +102,15 @@ export interface Billing {
   period: { starts_at: string; ends_at: string };
 }
 
-export interface EmailOpens {
+export interface EmailEngagement {
   /** Emails accepted by a provider. */
   emails: number;
   /** Emails opened at least once. */
   opened: number;
   open_rate: number;
+  /** Emails with at least one link clicked. */
+  clicked: number;
+  click_rate: number;
 }
 
 export interface PeriodStats {
@@ -115,7 +118,7 @@ export interface PeriodStats {
   delivered: number;
   failed: number;
   delivery_rate: number;
-  email_opens: EmailOpens;
+  email_engagement: EmailEngagement;
 }
 
 export interface WorkspaceStats {
@@ -164,9 +167,8 @@ export interface CampaignReport {
   counts: Record<MessageStatus, number>;
   delivery_rate: number;
   failure_rate: number;
-  /** Unique opens; null for SMS campaigns. */
-  opened: number | null;
-  open_rate: number | null;
+  /** Null for SMS campaigns. */
+  engagement: EmailEngagement | null;
   opt_outs: number;
   started_at: string | null;
   completed_at: string | null;
@@ -190,6 +192,8 @@ export interface ConnectionReport {
   /** Null for SMS connections. */
   opened: number | null;
   open_rate: number | null;
+  clicked: number | null;
+  click_rate: number | null;
 }
 
 export interface WorkspaceReport {
@@ -200,7 +204,7 @@ export interface WorkspaceReport {
   delivery_rate: number;
   failure_rate: number;
   /** Null when the report is filtered to SMS. */
-  opens: EmailOpens | null;
+  engagement: EmailEngagement | null;
   opt_outs: number;
   daily: Array<{ date: string; email: number; sms: number }>;
   failure_reasons: Array<{ reason: string; total: number }>;
@@ -208,9 +212,10 @@ export interface WorkspaceReport {
 }
 
 export interface CampaignPerformance extends Campaign {
-  counts: { sent: number; delivered: number; failed: number; opened: number | null };
+  counts: { sent: number; delivered: number; failed: number; opened: number | null; clicked: number | null };
   delivery_rate: number;
   open_rate: number | null;
+  click_rate: number | null;
 }
 
 export interface CampaignMessage {
@@ -225,6 +230,8 @@ export interface CampaignMessage {
   delivered_at: string | null;
   opened_at: string | null;
   opens_count: number;
+  clicked_at: string | null;
+  clicks_count: number;
 }
 
 export interface SmsInfo {
