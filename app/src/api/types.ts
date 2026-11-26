@@ -154,6 +154,41 @@ export interface CampaignReport {
   completed_at: string | null;
 }
 
+export interface ReportQuery {
+  days?: number;
+  channel?: Channel;
+}
+
+export interface ConnectionReport {
+  /** Null for campaigns sent before connections were recorded at launch. */
+  id: string | null;
+  name: string | null;
+  provider: string | null;
+  channel: Channel;
+  sent: number;
+  delivered: number;
+  failed: number;
+  delivery_rate: number;
+}
+
+export interface WorkspaceReport {
+  period: { from: string; to: string; days: number };
+  channel: Channel | null;
+  campaigns: number;
+  counts: Record<MessageStatus, number>;
+  delivery_rate: number;
+  failure_rate: number;
+  opt_outs: number;
+  daily: Array<{ date: string; email: number; sms: number }>;
+  failure_reasons: Array<{ reason: string; total: number }>;
+  connections: ConnectionReport[];
+}
+
+export interface CampaignPerformance extends Campaign {
+  counts: { sent: number; delivered: number; failed: number };
+  delivery_rate: number;
+}
+
 export interface CampaignMessage {
   id: number;
   to: string;

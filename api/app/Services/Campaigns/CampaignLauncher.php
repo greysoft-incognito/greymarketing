@@ -35,6 +35,7 @@ class CampaignLauncher
 
             $campaign->forceFill([
                 'recipients_count' => $campaign->messages()->count(),
+                'provider_connection_id' => $campaign->sendingConnection()?->id,
                 'status' => CampaignStatus::SENDING,
                 'started_at' => now(),
             ])->save();

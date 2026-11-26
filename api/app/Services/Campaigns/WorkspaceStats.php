@@ -2,6 +2,7 @@
 
 namespace App\Services\Campaigns;
 
+use App\Enums\Channel;
 use App\Enums\MessageStatus;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,10 +44,11 @@ class WorkspaceStats
      *
      * @return array<int, array{date: string, email: int, sms: int}>
      */
-    protected function daily(Workspace $workspace, Carbon $from): array
+    public function daily(Workspace $workspace, Carbon $from, ?Channel $channel = null): array
     {
         $rows = $this->messages($workspace)
             ->where('campaign_messages.sent_at', '>=', $from)
+            ->when($channel, fn (QueryBuilder $query) => $query->where('campaigns.channel', $channel->value))
             ->selectRaw('DATE(campaign_messages.sent_at) as day, campaigns.channel, COUNT(*) as total')
             ->groupByRaw('DATE(campaign_messages.sent_at), campaigns.channel')
             ->get();

@@ -44,16 +44,22 @@ function tickLabel(value: number) {
   return value >= 1000 ? `${value / 1000}k` : String(value);
 }
 
+/**
+ * Label every day for short ranges, and about fifteen evenly spaced days for longer ones.
+ */
+const labelEvery = computed(() => Math.max(1, Math.ceil(props.days.length / 15)));
+
 const bars = computed(() => props.days.map((day, index) => {
+  const isLast = index === props.days.length - 1;
   const x = LEFT + index * band.value + band.value * 0.18;
 
   return {
     ...day,
     x,
     width: band.value * 0.64,
-    label: new Date(day.date).getDate(),
+    label: isLast || (props.days.length - 1 - index) % labelEvery.value === 0 ? new Date(day.date).getDate() : '',
     title: formatDay(day.date),
-    isLast: index === props.days.length - 1,
+    isLast,
   };
 }));
 </script>
