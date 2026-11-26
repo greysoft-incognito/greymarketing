@@ -12,6 +12,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\Workspace;
+use App\Services\Billing\Invoice;
 use App\Services\Billing\SubscriptionManager;
 use Illuminate\Http\Request;
 
@@ -147,5 +148,15 @@ class BillingController extends Controller
             'status' => 'success',
             'status_code' => HttpStatus::OK,
         ]);
+    }
+
+    /**
+     * Download the PDF invoice for a completed payment.
+     */
+    public function invoice(Workspace $workspace, string $reference, SubscriptionManager $manager)
+    {
+        $this->authorize('manage', $workspace);
+
+        return (new Invoice($manager->transactionFor($workspace, $reference)))->download();
     }
 }
