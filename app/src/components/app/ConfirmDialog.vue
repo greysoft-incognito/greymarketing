@@ -7,9 +7,11 @@ const props = withDefaults(defineProps<{
   title: string;
   description: string;
   action?: string;
+  variant?: 'default' | 'destructive';
   run: () => Promise<unknown>;
 }>(), {
   action: 'Delete',
+  variant: 'destructive',
 });
 
 const open = defineModel<boolean>('open', { default: false });
@@ -44,7 +46,7 @@ async function confirm() {
         <Button variant="secondary" :disabled="busy" @click="open = false">
           Cancel
         </Button>
-        <Button variant="destructive" :disabled="busy" @click="confirm">
+        <Button :variant="variant" :disabled="busy" @click="confirm">
           {{ action }}
         </Button>
       </DialogFooter>
