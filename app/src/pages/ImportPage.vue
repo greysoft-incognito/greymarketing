@@ -10,7 +10,7 @@ import PageHeader from '@/components/app/PageHeader.vue';
 import PaginationFooter from '@/components/app/PaginationFooter.vue';
 import RefreshButton from '@/components/app/RefreshButton.vue';
 import StatCard from '@/components/app/StatCard.vue';
-import ImportSteps from '@/components/contacts/ImportSteps.vue';
+import StepIndicator from '@/components/app/StepIndicator.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -248,7 +248,7 @@ const statusBadge = (status: ContactImport['status']) => ({
 <template>
   <PageHeader title="Import contacts" description="Upload a CSV, tell us what each column is, and we add or update your contacts." />
 
-  <ImportSteps :steps="['Upload file', 'Map columns', 'Import']" :current="step === 3 && !running ? 4 : step" />
+  <StepIndicator :steps="['Upload file', 'Map columns', 'Import']" :current="step === 3 && !running ? 4 : step" />
 
   <!-- Upload -->
   <Card v-if="step === 1">
