@@ -10,6 +10,7 @@ use App\Http\Resources\SubscriptionResource;
 use App\Http\Resources\WorkspaceCollection;
 use App\Models\Plan;
 use App\Models\Workspace;
+use App\Models\WorkspaceUsage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -28,6 +29,8 @@ class WorkspaceController extends Controller
         $workspaces = Workspace::query()
             ->with(['owner', 'currentSubscription.plan'])
             ->withCount(['contacts', 'campaigns'])
+            ->withSum(['usage as emails_this_month' => fn (Builder $query) => $query->where('period', WorkspaceUsage::currentPeriod())], 'emails_sent')
+            ->withSum(['usage as sms_this_month' => fn (Builder $query) => $query->where('period', WorkspaceUsage::currentPeriod())], 'sms_sent')
             ->when($request->filled('search'), function (Builder $query) use ($request) {
                 $term = '%' . mb_strtolower($request->input('search')) . '%';
 
