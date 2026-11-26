@@ -23,8 +23,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/AppLayout.vue'),
     children: [
       { path: '', name: 'dashboard', component: () => import('@/pages/DashboardPage.vue'), meta: { title: 'Dashboard' } },
-      { path: 'campaigns', name: 'campaigns', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Campaigns' } },
-      { path: 'campaigns/new', name: 'campaigns.new', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'New campaign' } },
+      { path: 'campaigns', name: 'campaigns', component: () => import('@/pages/CampaignsPage.vue'), meta: { title: 'Campaigns' } },
+      { path: 'campaigns/new', name: 'campaigns.new', component: () => import('@/pages/CampaignBuilderPage.vue'), meta: { title: 'New campaign' } },
+      { path: 'campaigns/:campaign/edit', name: 'campaigns.edit', component: () => import('@/pages/CampaignBuilderPage.vue'), meta: { title: 'Edit campaign' } },
+      { path: 'campaigns/:campaign', name: 'campaigns.report', component: () => import('@/pages/CampaignReportPage.vue'), meta: { title: 'Campaign report' } },
       { path: 'contacts', name: 'contacts', component: () => import('@/pages/ContactsPage.vue'), meta: { title: 'Contacts' } },
       { path: 'contacts/import', name: 'contacts.import', component: () => import('@/pages/ImportPage.vue'), meta: { title: 'Import contacts' } },
       { path: 'templates', name: 'templates', component: () => import('@/pages/TemplatesPage.vue'), meta: { title: 'Templates' } },
