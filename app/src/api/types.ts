@@ -66,6 +66,12 @@ export interface Invitation {
   created_at: string;
 }
 
+export interface Branding {
+  app_name: string;
+  /** Admin-uploaded image for the sign-in panel; null means use the bundled default. */
+  auth_image: string | null;
+}
+
 export interface Country {
   code: string;
   dial_code: string;

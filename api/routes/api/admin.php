@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WorkspaceController;
+use App\Http\Controllers\BrandingController;
 use Illuminate\Support\Facades\Route;
 
 $permissionMiddlewares = 'role:' . implode('|', config('permission-defs.roles', []));
@@ -16,6 +17,7 @@ Route::middleware(['auth:sanctum', $permissionMiddlewares])->prefix('admin')->gr
     Route::apiResource('users', UserController::class);
 
     Route::apiResource('configurations', ConfigurationController::class)->only(['index', 'show', 'store']);
+    Route::delete('branding/auth-image', [BrandingController::class, 'resetAuthImage'])->name('admin.branding.auth-image.reset');
 
     // Notifications Templates
     Route::apiResource('configurations/notifications/templates', NotificationTemplateController::class)

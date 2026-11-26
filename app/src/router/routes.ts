@@ -54,6 +54,7 @@ const routes: RouteRecordRaw[] = [
       { path: '', name: 'admin', component: () => import('@/pages/admin/AdminOverviewPage.vue'), meta: { title: 'Overview' } },
       { path: 'customers', name: 'admin.customers', component: () => import('@/pages/admin/AdminCustomersPage.vue'), meta: { title: 'Customers' } },
       { path: 'plans', name: 'admin.plans', component: () => import('@/pages/admin/AdminPlansPage.vue'), meta: { title: 'Plans' } },
+      { path: 'settings', name: 'admin.settings', component: () => import('@/pages/admin/AdminSettingsPage.vue'), meta: { title: 'System settings' } },
       { path: 'usage', name: 'admin.usage', component: () => import('@/pages/admin/AdminUsagePage.vue'), meta: { title: 'Usage' } },
     ],
   },

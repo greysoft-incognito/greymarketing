@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { ArrowLeft, BarChart3, Layers, LayoutDashboard, Users } from 'lucide-vue-next';
+import { ArrowLeft, BarChart3, Layers, LayoutDashboard, Settings2, Users } from 'lucide-vue-next';
 import { useRoute } from 'vue-router';
 import BrandMark from '@/components/app/BrandMark.vue';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ const nav: NavItem[] = [
   { to: 'admin.customers', label: 'Customers', icon: Users },
   { to: 'admin.plans', label: 'Plans', icon: Layers },
   { to: 'admin.usage', label: 'Usage', icon: BarChart3 },
+  { to: 'admin.settings', label: 'System settings', icon: Settings2 },
 ];
 </script>
 
