@@ -87,7 +87,11 @@ class CampaignTest extends TestCase
 
         $id = $this->draft(['lists' => [$this->list->ulid, $second->ulid]]);
 
+        $this->getJson($this->url("/{$id}"))->assertOk()->assertJsonPath('audience', 2);
+
         $this->postJson($this->url("/{$id}/launch"))->assertAccepted();
+
+        $this->getJson($this->url("/{$id}"))->assertOk()->assertJsonPath('audience', null);
 
         $campaign = Campaign::firstWhere('ulid', $id);
 

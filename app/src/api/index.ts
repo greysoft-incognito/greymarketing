@@ -2,6 +2,10 @@ import type {
   AuthResponse,
   Billing,
   Campaign,
+  CampaignDetail,
+  CampaignInput,
+  CampaignMessage,
+  CampaignReport,
   Channel,
   ConnectionInput,
   Contact,
@@ -9,10 +13,13 @@ import type {
   ContactInput,
   ContactList,
   Envelope,
+  MessageStatus,
   ImportUpload,
   Paginated,
   Provider,
   ProviderConnection,
+  Template,
+  TemplateInput,
   User,
   Workspace,
   WorkspaceStats,
@@ -47,12 +54,12 @@ export const workspaces = {
   update: (id: string, data: Partial<Pick<Workspace, 'name' | 'default_country'>>) =>
     alova.Put<Envelope<Workspace>>(`/workspaces/${id}`, data, { name: 'workspaces.write' }),
 
-  stats: (id: string, days = 14) => alova.Get<Envelope<WorkspaceStats>>(`/workspaces/${id}/stats`, { name: 'stats', params: { days }, hitSource: ['contacts.write', 'imports.write'] }),
+  stats: (id: string, days = 14) => alova.Get<Envelope<WorkspaceStats>>(`/workspaces/${id}/stats`, { name: 'stats', params: { days }, hitSource: ['contacts.write', 'imports.write', 'campaigns.write'] }),
 
-  billing: (id: string) => alova.Get<Envelope<Billing>>(`/workspaces/${id}/billing`, { name: 'billing', hitSource: ['contacts.write', 'imports.write'] }),
+  billing: (id: string) => alova.Get<Envelope<Billing>>(`/workspaces/${id}/billing`, { name: 'billing', hitSource: ['contacts.write', 'imports.write', 'campaigns.write'] }),
 
   campaigns: (id: string, params: { status?: string; limit?: number; page?: number } = {}) =>
-    alova.Get<Paginated<Campaign>>(`/workspaces/${id}/campaigns`, { name: 'campaigns.list', params }),
+    alova.Get<Paginated<Campaign>>(`/workspaces/${id}/campaigns`, { name: 'campaigns.list', params, hitSource: 'campaigns.write' }),
 
   connections: (id: string) => alova.Get<Paginated<ProviderConnection>>(`/workspaces/${id}/connections`, { name: 'connections.list', params: { limit: 100 }, hitSource: 'connections.write' }),
 };
@@ -131,4 +138,48 @@ export const imports = {
 
   start: (workspace: string, id: string, data: { mapping: Record<string, string | null>; list?: string | null }) =>
     alova.Post<Envelope<ContactImport>>(`/workspaces/${workspace}/imports/${id}/start`, data, { name: 'imports.write' }),
+};
+
+export const templates = {
+  list: (workspace: string, params: { channel?: Channel; page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<Template>>(`/workspaces/${workspace}/templates`, { name: 'templates.list', params, hitSource: 'templates.write' }),
+
+  show: (workspace: string, id: string) =>
+    alova.Get<Envelope<Template>>(`/workspaces/${workspace}/templates/${id}`, { name: 'templates.show', hitSource: 'templates.write' }),
+
+  create: (workspace: string, data: TemplateInput) =>
+    alova.Post<Envelope<Template>>(`/workspaces/${workspace}/templates`, data, { name: 'templates.write' }),
+
+  update: (workspace: string, id: string, data: TemplateInput) =>
+    alova.Put<Envelope<Template>>(`/workspaces/${workspace}/templates/${id}`, data, { name: 'templates.write' }),
+
+  remove: (workspace: string, id: string) => alova.Delete(`/workspaces/${workspace}/templates/${id}`, undefined, { name: 'templates.write' }),
+};
+
+/**
+ * Campaign drafts, launches and reports. Reports are never cached, since they change while sending.
+ */
+export const campaigns = {
+  show: (workspace: string, id: string) =>
+    alova.Get<CampaignDetail>(`/workspaces/${workspace}/campaigns/${id}`, { cacheFor: 0 }),
+
+  create: (workspace: string, data: CampaignInput) =>
+    alova.Post<Envelope<Campaign>>(`/workspaces/${workspace}/campaigns`, data, { name: 'campaigns.write' }),
+
+  update: (workspace: string, id: string, data: CampaignInput) =>
+    alova.Put<Envelope<Campaign>>(`/workspaces/${workspace}/campaigns/${id}`, data, { name: 'campaigns.write' }),
+
+  remove: (workspace: string, id: string) => alova.Delete(`/workspaces/${workspace}/campaigns/${id}`, undefined, { name: 'campaigns.write' }),
+
+  launch: (workspace: string, id: string, scheduledAt: string | null = null) =>
+    alova.Post<Envelope<Campaign>>(`/workspaces/${workspace}/campaigns/${id}/launch`, scheduledAt ? { scheduled_at: scheduledAt } : {}, { name: 'campaigns.write' }),
+
+  cancel: (workspace: string, id: string) =>
+    alova.Post<Envelope<Campaign>>(`/workspaces/${workspace}/campaigns/${id}/cancel`, undefined, { name: 'campaigns.write' }),
+
+  report: (workspace: string, id: string) =>
+    alova.Get<Envelope<CampaignReport>>(`/workspaces/${workspace}/campaigns/${id}/report`, { cacheFor: 0 }),
+
+  messages: (workspace: string, id: string, params: { status?: MessageStatus; page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<CampaignMessage>>(`/workspaces/${workspace}/campaigns/${id}/messages`, { cacheFor: 0, params }),
 };

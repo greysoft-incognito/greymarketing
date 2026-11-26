@@ -99,11 +99,80 @@ export interface Campaign {
   name: string;
   channel: Channel;
   status: CampaignStatus;
+  template?: Template | null;
+  connection?: ProviderConnection | null;
+  lists?: ContactList[];
   recipients_count: number;
   scheduled_at: string | null;
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
+}
+
+export interface CampaignDetail extends Envelope<Campaign> {
+  /** Contacts it would reach now, while it can still be edited. */
+  audience: number | null;
+}
+
+export interface CampaignInput {
+  name?: string;
+  channel?: Channel;
+  template?: string | null;
+  connection?: string | null;
+  lists?: string[];
+  scheduled_at?: string | null;
+}
+
+export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'failed' | 'skipped';
+
+export interface CampaignReport {
+  status: CampaignStatus;
+  recipients: number;
+  counts: Record<MessageStatus, number>;
+  delivery_rate: number;
+  failure_rate: number;
+  opt_outs: number;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface CampaignMessage {
+  id: number;
+  to: string;
+  contact: Contact | null;
+  status: MessageStatus;
+  provider_message_id: string | null;
+  error: string | null;
+  attempts: number;
+  sent_at: string | null;
+  delivered_at: string | null;
+}
+
+export interface SmsInfo {
+  encoding: 'gsm7' | 'ucs2';
+  length: number;
+  segments: number;
+}
+
+export interface Template {
+  id: string;
+  channel: Channel;
+  name: string;
+  subject: string | null;
+  html: string | null;
+  body: string | null;
+  tags: string[];
+  sms?: SmsInfo;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateInput {
+  channel?: Channel;
+  name?: string;
+  subject?: string | null;
+  html?: string | null;
+  body?: string | null;
 }
 
 export interface ProviderField {
