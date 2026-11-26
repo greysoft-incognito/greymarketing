@@ -24,6 +24,8 @@ class CampaignMessageResource extends JsonResource
             'delivered_at' => $this->delivered_at,
             'opened_at' => $this->opened_at,
             'opens_count' => $this->opens_count,
+            'clicked_at' => $this->clicked_at,
+            'clicks_count' => $this->clicks_count,
         ];
     }
 }

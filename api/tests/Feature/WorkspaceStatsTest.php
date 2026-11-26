@@ -67,7 +67,7 @@ class WorkspaceStatsTest extends TestCase
                 'delivered' => 3,
                 'failed' => 1,
                 'delivery_rate' => 75,
-                'email_opens' => ['emails' => 1, 'opened' => 1, 'open_rate' => 100],
+                'email_engagement' => ['emails' => 1, 'opened' => 1, 'open_rate' => 100, 'clicked' => 0, 'click_rate' => 0],
             ])
             ->assertJsonPath('data.last_month.sent', 1)
             ->assertJsonPath('data.contacts.total', 7)

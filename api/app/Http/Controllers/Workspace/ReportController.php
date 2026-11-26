@@ -33,7 +33,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Campaigns started in the period with their delivery and open counts, newest first.
+     * Campaigns started in the period with their delivery, open and click counts, newest first.
      */
     public function campaigns(Request $request, Workspace $workspace, WorkspaceReport $report)
     {
@@ -46,6 +46,7 @@ class ReportController extends Controller
                 "messages as {$status->value}_count" => fn (Builder $query) => $query->where('status', $status),
             ])
             ->put('messages as opened_count', fn (Builder $query) => $query->whereNotNull('opened_at'))
+            ->put('messages as clicked_count', fn (Builder $query) => $query->whereNotNull('clicked_at'))
             ->all();
 
         $campaigns = $report->campaigns($workspace, now()->startOfDay()->subDays($days - 1), $channel)

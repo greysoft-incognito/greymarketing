@@ -10,6 +10,10 @@ use App\Models\Campaign;
  */
 class CampaignReport
 {
+    public function __construct(
+        protected EmailEngagement $engagement,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -18,7 +22,6 @@ class CampaignReport
         $counts = $campaign->statusCounts();
         $attempted = $counts['sent'] + $counts['delivered'] + $counts['failed'];
         $reached = $counts['sent'] + $counts['delivered'];
-        $opened = $this->opened($campaign);
 
         return [
             'status' => $campaign->status->value,
@@ -26,8 +29,7 @@ class CampaignReport
             'counts' => $counts,
             'delivery_rate' => $reached ? round($counts['delivered'] / $reached * 100, 1) : 0.0,
             'failure_rate' => $attempted ? round($counts['failed'] / $attempted * 100, 1) : 0.0,
-            'opened' => $opened,
-            'open_rate' => $opened === null ? null : ($reached ? round($opened / $reached * 100, 1) : 0.0),
+            'engagement' => $this->emailEngagement($campaign),
             'opt_outs' => $this->optOuts($campaign),
             'started_at' => $campaign->started_at,
             'completed_at' => $campaign->completed_at,
@@ -35,15 +37,17 @@ class CampaignReport
     }
 
     /**
-     * Recipients who opened the email at least once, or null for channels that cannot track opens.
+     * Unique opens and clicks, or null for channels that cannot track them.
+     *
+     * @return array{emails: int, opened: int, open_rate: float, clicked: int, click_rate: float}|null
      */
-    protected function opened(Campaign $campaign): ?int
+    protected function emailEngagement(Campaign $campaign): ?array
     {
         if ($campaign->channel !== Channel::EMAIL) {
             return null;
         }
 
-        return $campaign->messages()->whereNotNull('opened_at')->count();
+        return $this->engagement->summarise($campaign->messages()->toBase());
     }
 
     /**

@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\DB;
  */
 class WorkspaceStats
 {
+    public function __construct(
+        protected EmailEngagement $engagement,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -71,7 +75,7 @@ class WorkspaceStats
     }
 
     /**
-     * @return array{sent: int, delivered: int, failed: int, delivery_rate: float, email_opens: array{emails: int, opened: int, open_rate: float}}
+     * @return array{sent: int, delivered: int, failed: int, delivery_rate: float, email_engagement: array<string, int|float>}
      */
     protected function period(Workspace $workspace, Carbon $from, ?Carbon $to = null): array
     {
@@ -91,29 +95,11 @@ class WorkspaceStats
             'delivered' => $delivered,
             'failed' => (int) ($counts[MessageStatus::FAILED->value] ?? 0),
             'delivery_rate' => $sent ? round($delivered / $sent * 100, 1) : 0.0,
-            'email_opens' => $this->emailOpens($workspace, $from, $to),
+            'email_engagement' => $this->engagement->summarise($this->messages($workspace)
+                ->where('campaigns.channel', Channel::EMAIL->value)
+                ->where('campaign_messages.sent_at', '>=', $from)
+                ->when($to, fn (QueryBuilder $query) => $query->where('campaign_messages.sent_at', '<', $to))),
         ];
-    }
-
-    /**
-     * Unique opens among emails sent in the period.
-     *
-     * @return array{emails: int, opened: int, open_rate: float}
-     */
-    protected function emailOpens(Workspace $workspace, Carbon $from, ?Carbon $to = null): array
-    {
-        $row = $this->messages($workspace)
-            ->where('campaigns.channel', Channel::EMAIL->value)
-            ->whereIn('campaign_messages.status', [MessageStatus::SENT->value, MessageStatus::DELIVERED->value])
-            ->where('campaign_messages.sent_at', '>=', $from)
-            ->when($to, fn (QueryBuilder $query) => $query->where('campaign_messages.sent_at', '<', $to))
-            ->selectRaw('COUNT(*) as emails, SUM(CASE WHEN campaign_messages.opened_at IS NOT NULL THEN 1 ELSE 0 END) as opened')
-            ->first();
-
-        $emails = (int) $row->emails;
-        $opened = (int) $row->opened;
-
-        return ['emails' => $emails, 'opened' => $opened, 'open_rate' => $emails ? round($opened / $emails * 100, 1) : 0.0];
     }
 
     protected function messages(Workspace $workspace): QueryBuilder
