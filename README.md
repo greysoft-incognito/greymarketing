@@ -45,4 +45,6 @@ pnpm app:typecheck
 pnpm app:build                 # outputs app/dist/spa
 ```
 
+The app deploys to Cloudflare Workers static assets with `wrangler.jsonc`. Dashboard settings are in [docs/deploy-web-app.md](docs/deploy-web-app.md).
+
 UI components live in `app/src/components/ui` in the shadcn-vue layout (`components.json` is set up), themed with the Greysoft colours in `app/src/css/app.css`.
