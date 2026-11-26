@@ -6,3 +6,8 @@ declare namespace NodeJS {
     API_URL: string;
   }
 }
+
+declare module '*.svg' {
+  const src: string;
+  export default src;
+}

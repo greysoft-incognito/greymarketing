@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { invites } from '@/api';
 import AuthShell from '@/components/app/AuthShell.vue';
 import { Button } from '@/components/ui/button';
+import { useBranding } from '@/composables/useBranding';
 import { notifyError, toast } from '@/lib/notify';
 import { useSession } from '@/stores/session';
 import { useWorkspace } from '@/stores/workspace';
@@ -14,6 +15,7 @@ const route = useRoute();
 const router = useRouter();
 const session = useSession();
 const workspace = useWorkspace();
+const panelMessage = useBranding().message('invite');
 
 const token = String(route.params.token);
 const { data: invite, loading, error } = useRequest(() => invites.show(token));
@@ -84,7 +86,7 @@ async function decline() {
   <AuthShell>
     <template #aside>
       <p class="m-0 max-w-[46ch] text-lg leading-normal">
-        Your team works from one contact list, one set of templates and the providers your workspace already connected.
+        {{ panelMessage }}
       </p>
     </template>
 

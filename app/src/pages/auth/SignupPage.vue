@@ -8,12 +8,14 @@ import FormField from '@/components/app/FormField.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useBranding } from '@/composables/useBranding';
 import { useSession } from '@/stores/session';
 import { useWorkspace } from '@/stores/workspace';
 
 const route = useRoute();
 const router = useRouter();
 const session = useSession();
+const heading = useBranding().message('sign_up');
 const workspace = useWorkspace();
 
 const form = reactive({ firstname: '', lastname: '', business: '', email: typeof route.query.email === 'string' ? route.query.email : '', phone: '', password: '' });
@@ -61,7 +63,7 @@ async function submit() {
     <template #aside>
       <div class="grid max-w-[42ch] gap-4">
         <h2 class="text-[26px] font-semibold">
-          Send with the providers you already use
+          {{ heading }}
         </h2>
         <ul class="m-0 grid list-none gap-2.5 p-0">
           <li v-for="perk in perks" :key="perk" class="flex items-start gap-2">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\HttpStatus;
 use App\Helpers\Provider;
 use App\Http\Controllers\Controller;
+use App\Services\Branding\Branding;
 use Illuminate\Http\Request;
 use Toneflix\DbConfig\Models\Configuration;
 
@@ -49,6 +50,12 @@ class ConfigurationController extends Controller
         $rules = Configuration::all()->mapWithKeys(function ($conf) {
             return [$conf->key => ['nullable', $conf->type]];
         })->toArray();
+
+        $rules[Branding::AUTH_IMAGE] = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
+
+        foreach (Branding::AUTH_MESSAGES as $key) {
+            $rules[$key] = ['nullable', 'string', 'max:' . Branding::MESSAGE_MAX];
+        }
 
         $valid = $this->validate($request, $rules);
 
