@@ -8,7 +8,7 @@ import { useTheme } from '@/composables/useTheme';
 import { useSession } from '@/stores/session';
 import { useWorkspace } from '@/stores/workspace';
 
-defineProps<{ title: string }>();
+defineProps<{ title: string; context?: string }>();
 
 const emit = defineEmits<{ menu: [] }>();
 
@@ -29,7 +29,7 @@ async function signOut() {
       <Menu />
     </Button>
     <div class="flex min-w-0 items-center gap-1.5 overflow-hidden text-[13px] whitespace-nowrap text-muted-foreground">
-      <span class="truncate">{{ workspace.current?.name }}</span>
+      <span class="truncate">{{ context ?? workspace.current?.name }}</span>
       <span aria-hidden="true">/</span>
       <b class="font-medium text-foreground">{{ title }}</b>
     </div>

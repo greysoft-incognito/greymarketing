@@ -26,6 +26,8 @@ import type {
 } from './types';
 import { alova } from './client';
 
+export { admin } from './admin';
+export type * from './admin';
 export { forget, forgetAll } from './cache';
 export { ApiError } from './client';
 export type * from './types';

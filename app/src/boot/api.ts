@@ -29,6 +29,10 @@ export default defineBoot(async ({ router, store }) => {
       await workspace.load();
     }
 
+    if (to.meta.staff && !session.isStaff) {
+      return { name: 'dashboard' };
+    }
+
     return true;
   });
 
