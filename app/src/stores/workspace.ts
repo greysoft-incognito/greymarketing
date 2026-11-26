@@ -35,14 +35,46 @@ export const useWorkspace = defineStore('workspace', () => {
     await loadBilling();
   }
 
-  async function rename(name: string) {
+  async function update(data: Partial<Pick<Workspace, 'name' | 'default_country'>>) {
     if (!current.value) {
       return;
     }
 
-    const updated = (await api.update(current.value.id, { name })).data;
+    const updated = (await api.update(current.value.id, data)).data;
 
     list.value = list.value.map(workspace => workspace.id === updated.id ? { ...workspace, ...updated } : workspace);
+  }
+
+  async function rename(name: string) {
+    await update({ name });
+  }
+
+  /**
+   * Create a workspace and switch to it.
+   */
+  async function create(name: string) {
+    const created = (await api.create(name)).data;
+
+    currentId.value = created.id;
+
+    await load();
+
+    return created;
+  }
+
+  /**
+   * Delete the current workspace, or leave it when the user is not its owner, then switch to another.
+   */
+  async function remove() {
+    if (!current.value) {
+      return;
+    }
+
+    await (current.value.is_owner ? api.remove(current.value.id) : api.leave(current.value.id));
+
+    currentId.value = null;
+
+    await load();
   }
 
   function reset() {
@@ -50,5 +82,5 @@ export const useWorkspace = defineStore('workspace', () => {
     billing.value = null;
   }
 
-  return { list, currentId, current, billing, canManage, load, loadBilling, select, rename, reset };
+  return { list, currentId, current, billing, canManage, load, loadBilling, select, update, rename, create, remove, reset };
 });

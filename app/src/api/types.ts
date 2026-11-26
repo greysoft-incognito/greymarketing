@@ -40,7 +40,13 @@ export interface Workspace {
   default_country: string;
   role?: 'owner' | 'admin' | 'member';
   is_owner: boolean;
+  plan?: { id: string; name: string } | null;
   created_at: string;
+}
+
+export interface Country {
+  code: string;
+  dial_code: string;
 }
 
 export interface Plan {

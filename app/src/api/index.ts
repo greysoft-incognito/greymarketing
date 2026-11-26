@@ -11,6 +11,7 @@ import type {
   Checkout,
   ConnectionInput,
   Contact,
+  Country,
   ContactImport,
   ContactInput,
   ContactList,
@@ -55,6 +56,10 @@ export const providers = {
   catalog: () => alova.Get<Envelope<Provider[]>>('/providers', { name: 'providers.catalog', cacheFor: 10 * 60 * 1000 }),
 };
 
+export const countries = {
+  list: () => alova.Get<Envelope<Country[]>>('/countries', { name: 'countries', cacheFor: 60 * 60 * 1000 }),
+};
+
 export const workspaces = {
   list: () => alova.Get<Paginated<Workspace>>('/workspaces', { name: 'workspaces.list', params: { limit: 100 }, hitSource: 'workspaces.write' }),
 
@@ -62,6 +67,10 @@ export const workspaces = {
 
   update: (id: string, data: Partial<Pick<Workspace, 'name' | 'default_country'>>) =>
     alova.Put<Envelope<Workspace>>(`/workspaces/${id}`, data, { name: 'workspaces.write' }),
+
+  remove: (id: string) => alova.Delete(`/workspaces/${id}`, undefined, { name: 'workspaces.write' }),
+
+  leave: (id: string) => alova.Post(`/workspaces/${id}/leave`, undefined, { name: 'workspaces.write' }),
 
   stats: (id: string, days = 14) => alova.Get<Envelope<WorkspaceStats>>(`/workspaces/${id}/stats`, { name: 'stats', params: { days }, hitSource: ['contacts.write', 'imports.write', 'campaigns.write'] }),
 
