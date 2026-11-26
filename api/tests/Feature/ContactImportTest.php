@@ -146,4 +146,70 @@ class ContactImportTest extends TestCase
         $this->assertSame(1203, ContactImport::firstWhere('ulid', $id)->imported);
         $this->assertSame(1203, $this->workspace->contacts()->count());
     }
+
+    public function testVcardFilesAreReadAsRows(): void
+    {
+        $vcf = implode("\r\n", [
+            'BEGIN:VCARD',
+            'VERSION:3.0',
+            'N:Okafor;Ada;;;',
+            'FN:Ada Okafor',
+            'EMAIL;TYPE=INTERNET:ada@example.com',
+            'TEL;TYPE=HOME:0701 000 0000',
+            'item1.TEL;TYPE=CELL:0801 234 5678',
+            'ADR;TYPE=WORK:;;12 Allen Ave;Lagos;;;Nigeria',
+            'NOTE:Met at the\, Lagos fair\nlikes chin',
+            ' chin',
+            'END:VCARD',
+            'BEGIN:VCARD',
+            'VERSION:2.1',
+            'FN:Obi Nwosu',
+            'TEL:+2348031112222',
+            'END:VCARD',
+        ]);
+
+        $response = $this->post($this->url(), [
+            'file' => $this->realFile('phone.vcf', $vcf),
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('headers', ['First name', 'Last name', 'Email', 'Phone', 'City', 'Note'])
+            ->assertJsonPath('sample.0.Phone', '0801 234 5678')
+            ->assertJsonPath('sample.0.Note', "Met at the, Lagos fair\nlikes chinchin")
+            ->assertJsonPath('sample.1.First name', 'Obi')
+            ->assertJsonPath('sample.1.Last name', 'Nwosu')
+            ->assertJsonPath('data.mapping', [
+                'First name' => 'first_name',
+                'Last name' => 'last_name',
+                'Email' => 'email',
+                'Phone' => 'phone',
+                'City' => 'fields.city',
+                'Note' => 'fields.note',
+            ]);
+
+        $id = $response->json('data.id');
+
+        $this->postJson($this->url("/{$id}/start"), ['mapping' => $response->json('data.mapping')])->assertAccepted();
+
+        $this->assertSame(2, ContactImport::firstWhere('ulid', $id)->imported);
+        $this->assertSame('+2348012345678', $this->workspace->contacts()->firstWhere('email', 'ada@example.com')->phone);
+        $this->assertSame('Lagos', $this->workspace->contacts()->firstWhere('email', 'ada@example.com')->fields['city']);
+    }
+
+    public function testOtherFileTypesAreRejected(): void
+    {
+        $this->post($this->url(), [
+            'file' => UploadedFile::fake()->create('contacts.pdf', 10, 'application/pdf'),
+        ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('file');
+    }
+
+    /**
+     * An upload backed by a real file, so its type is sniffed from the content like a browser upload.
+     */
+    protected function realFile(string $name, string $content): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'upload');
+        file_put_contents($path, $content);
+
+        return new UploadedFile($path, $name, null, null, true);
+    }
 }

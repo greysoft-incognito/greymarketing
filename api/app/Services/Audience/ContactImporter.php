@@ -51,13 +51,13 @@ class ContactImporter
                 }
             }
 
-            return [$header => $key === '' ? null : 'fields.' . Str::snake($key)];
+            return [$header => $key === '' ? null : 'fields.'.Str::snake($key)];
         })->all();
     }
 
-    public function reader(ContactImport $import): CsvReader
+    public function reader(ContactImport $import): ContactFileReader
     {
-        return new CsvReader(Storage::path($import->file_path));
+        return ContactFileReader::for(Storage::path($import->file_path));
     }
 
     /**
@@ -134,7 +134,7 @@ class ContactImporter
                 continue;
             }
 
-            $keys = array_filter(['e:' . $email => $email, 'p:' . $phone => $phone]);
+            $keys = array_filter(['e:'.$email => $email, 'p:'.$phone => $phone]);
 
             if (array_intersect_key($seen, $keys)) {
                 $failures[] = ['line' => $line, 'reason' => 'Duplicate of an earlier row.'];
