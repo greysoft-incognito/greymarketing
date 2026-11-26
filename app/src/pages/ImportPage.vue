@@ -294,20 +294,23 @@ const statusBadge = (status: ContactImport['status']) => ({
         <TableHeader>
           <TableRow>
             <TableHead>Column in your file</TableHead>
-            <TableHead>Sample value</TableHead>
+            <TableHead class="hidden sm:table-cell">
+              Sample value
+            </TableHead>
             <TableHead>Save as</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow v-for="header in upload.headers" :key="header">
-            <TableCell class="font-medium">
+            <TableCell class="max-w-[160px] font-medium sm:max-w-none">
               {{ header || '(no name)' }}
+              <span class="block truncate font-mono text-xs font-normal text-muted-foreground sm:hidden">{{ sampleFor(header) || '–' }}</span>
             </TableCell>
-            <TableCell class="max-w-[220px] truncate font-mono text-[13px] text-muted-foreground">
+            <TableCell class="hidden max-w-[220px] truncate sm:table-cell font-mono text-[13px] text-muted-foreground">
               {{ sampleFor(header) || '–' }}
             </TableCell>
             <TableCell>
-              <NativeSelect v-model="mapping[header]" class="w-[240px]" :aria-label="`Save ${header} as`">
+              <NativeSelect v-model="mapping[header]" class="w-[180px] sm:w-[240px]" :aria-label="`Save ${header} as`">
                 <option v-for="option in options" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
