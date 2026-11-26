@@ -63,7 +63,25 @@ export interface Subscription {
   currency: string;
   starts_at: string | null;
   ends_at: string | null;
+  cancelled_at: string | null;
   plan?: Plan;
+}
+
+export interface Transaction {
+  reference: string;
+  method: string;
+  status: 'pending' | 'complete' | 'rejected';
+  amount: number;
+  discount: number;
+  due: number;
+  type: string;
+  subscription: { id: string; currency: string; plan: Pick<Plan, 'name' | 'interval'> } | null;
+  created_at: string;
+}
+
+export interface Checkout extends Envelope<Subscription> {
+  /** Flutterwave payment page for paid plans; null when the plan started at once. */
+  checkout_url: string | null;
 }
 
 export interface UsageItem {

@@ -34,7 +34,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'templates/:template', name: 'templates.edit', component: () => import('@/pages/TemplateEditorPage.vue'), meta: { title: 'Edit template' } },
       { path: 'reports', name: 'reports', component: () => import('@/pages/ReportsPage.vue'), meta: { title: 'Reports' } },
       { path: 'providers', name: 'providers', component: () => import('@/pages/ProvidersPage.vue'), meta: { title: 'Providers' } },
-      { path: 'billing', name: 'billing', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Billing' } },
+      { path: 'billing', name: 'billing', component: () => import('@/pages/BillingPage.vue'), meta: { title: 'Billing' } },
       { path: 'settings', name: 'settings', component: () => import('@/pages/ComingSoonPage.vue'), meta: { title: 'Workspace settings' } },
     ],
   },

@@ -102,12 +102,16 @@ class BillingController extends Controller
         ]);
     }
 
+    /**
+     * Payments for the workspace's subscriptions, with the plan each one paid for.
+     */
     public function transactions(Request $request, Workspace $workspace)
     {
         $this->authorize('manage', $workspace);
 
         $transactions = Transaction::query()
             ->whereHasMorph('transactable', Subscription::class, fn ($query) => $query->where('workspace_id', $workspace->id))
+            ->with('transactable.plan')
             ->latest('id')
             ->paginate(min((int) $request->input('limit', 30), 100));
 
