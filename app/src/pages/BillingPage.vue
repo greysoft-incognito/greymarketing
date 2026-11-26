@@ -2,7 +2,7 @@
 import type { Plan } from '@/api';
 import { invalidateCache } from 'alova';
 import { usePagination, useRequest } from 'alova/client';
-import { Receipt } from 'lucide-vue-next';
+import { Download, Receipt } from 'lucide-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { billing, forget, workspaces } from '@/api';
@@ -18,7 +18,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { downloadBlob } from '@/lib/csv';
 import { formatMoney } from '@/lib/format';
 import { notifyError, toast } from '@/lib/notify';
 import { useWorkspace } from '@/stores/workspace';
@@ -91,12 +93,64 @@ const status = computed(() => {
     return current.value ? { label: 'Free', variant: 'default' as const, note: 'No payment needed' } : null;
   }
 
-  return sub.status === 'cancelled'
-    ? { label: 'Cancelled', variant: 'warning' as const, note: `Ends ${formatDate(sub.ends_at)}` }
-    : { label: 'Active', variant: 'success' as const, note: `Paid until ${formatDate(sub.ends_at)}` };
+  if (sub.status === 'cancelled') {
+    return { label: 'Cancelled', variant: 'warning' as const, note: `Ends ${formatDate(sub.ends_at)}` };
+  }
+
+  return { label: 'Active', variant: 'success' as const, note: sub.renews_at ? `Renews ${formatDate(sub.renews_at)}` : `Paid until ${formatDate(sub.ends_at)}` };
 });
 
 const paidPlan = computed(() => !!subscription.value && !!current.value && !current.value.is_free);
+
+const card = computed(() => {
+  const saved = subscription.value?.card;
+
+  return saved ? `${saved.brand ?? 'Card'} •••• ${saved.last4 ?? ''}`.trim() : null;
+});
+
+const renewalNote = computed(() => {
+  const sub = subscription.value!;
+
+  if (!card.value) {
+    return 'Pay by card once to renew automatically.';
+  }
+
+  return sub.auto_renew
+    ? `We'll charge ${card.value} on ${formatDate(sub.ends_at)}.`
+    : `Off. Your plan ends on ${formatDate(sub.ends_at)}.`;
+});
+
+const togglingRenewal = ref(false);
+
+/**
+ * Turn renewal with the saved card on or off. Turning it on also undoes a cancellation.
+ */
+async function setAutoRenew(enabled: boolean) {
+  togglingRenewal.value = true;
+
+  try {
+    toast.success((await billing.autoRenew(id, enabled)).message);
+    await sendSummary();
+  } catch (e) {
+    notifyError(e);
+  } finally {
+    togglingRenewal.value = false;
+  }
+}
+
+const downloading = ref<string | null>(null);
+
+async function downloadInvoice(reference: string, number: string) {
+  downloading.value = reference;
+
+  try {
+    downloadBlob(`${number}.pdf`, await billing.invoice(id, reference));
+  } catch (e) {
+    notifyError(e);
+  } finally {
+    downloading.value = null;
+  }
+}
 
 /**
  * Fetch the plan, usage, plans and payments again, skipping anything cached.
@@ -161,7 +215,7 @@ function choose(plan: Plan) {
 
   ask({
     title: `${upgrade ? 'Upgrade' : 'Switch'} to ${plan.name}?`,
-    description: `You'll pay ${price(plan)} on Flutterwave.${from ? ` Your ${from.name} plan ends once the payment goes through.` : ''}`,
+    description: `You'll pay ${price(plan)} on Flutterwave.${from ? ` Your ${from.name} plan ends once the payment goes through.` : ''} If you pay by card, we'll charge it each ${plan.interval} until you turn off auto-renew.`,
     action: 'Continue to payment',
     variant: 'default',
     run: () => subscribe(plan),
@@ -183,7 +237,7 @@ function renew() {
 function cancel() {
   ask({
     title: `Cancel your ${current.value!.name} plan?`,
-    description: `You keep its limits until ${formatDate(subscription.value!.ends_at)}. After that the workspace moves to the free plan.`,
+    description: `You keep its limits until ${formatDate(subscription.value!.ends_at)}. After that the workspace moves to the free plan${subscription.value!.auto_renew ? ' and your card is not charged again' : ''}.`,
     action: 'Cancel plan',
     variant: 'destructive',
     run: async () => {
@@ -272,6 +326,19 @@ onMounted(confirmReturn);
         </template>
         <template v-else>Choose a plan below to start sending.</template>
       </span>
+      <div v-if="paidPlan" class="mt-2 flex items-center gap-2.5">
+        <Switch
+          v-if="workspace.canManage"
+          :model-value="subscription!.auto_renew"
+          :disabled="togglingRenewal || !card"
+          aria-label="Renew automatically"
+          @update:model-value="setAutoRenew($event)"
+        />
+        <span class="text-[13px]">
+          <span class="font-medium">Auto-renew</span>
+          <span class="text-muted-foreground"> · {{ renewalNote }}</span>
+        </span>
+      </div>
     </div>
     <div v-if="workspace.canManage && paidPlan" class="flex flex-wrap gap-2">
       <Button variant="secondary" :disabled="busy" @click="renew">
@@ -335,6 +402,9 @@ onMounted(confirmReturn);
               Amount
             </TableHead>
             <TableHead>Status</TableHead>
+            <TableHead class="w-10">
+              <span class="sr-only">Invoice</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -368,16 +438,30 @@ onMounted(confirmReturn);
                   Failed
                 </Badge>
               </TableCell>
+              <TableCell class="text-right">
+                <Button
+                  v-if="payment.invoice_number"
+                  variant="ghost"
+                  size="icon"
+                  class="size-8"
+                  :disabled="downloading === payment.reference"
+                  :aria-label="`Download invoice ${payment.invoice_number}`"
+                  :title="`Download invoice ${payment.invoice_number}`"
+                  @click="downloadInvoice(payment.reference, payment.invoice_number)"
+                >
+                  <Download />
+                </Button>
+              </TableCell>
             </TableRow>
           </template>
           <template v-else-if="rowsLoading">
             <TableRow v-for="n in 3" :key="n">
-              <TableCell :colspan="5">
+              <TableCell :colspan="6">
                 <Skeleton class="h-8" />
               </TableCell>
             </TableRow>
           </template>
-          <TableEmpty v-if="!rows.length && !rowsLoading && !rowsError" :colspan="5">
+          <TableEmpty v-if="!rows.length && !rowsLoading && !rowsError" :colspan="6">
             <div class="grid place-items-center gap-3 py-6">
               <span class="grid size-11 place-items-center rounded-full bg-brand-soft text-brand"><Receipt class="size-5" /></span>
               <span>No payments yet.</span>

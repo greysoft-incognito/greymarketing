@@ -263,6 +263,12 @@ export const billing = {
   cancel: (workspace: string) =>
     alova.Post<Envelope<Subscription>>(`/workspaces/${workspace}/billing/cancel`, undefined, { name: 'billing.write' }),
 
+  autoRenew: (workspace: string, enabled: boolean) =>
+    alova.Put<Envelope<Subscription>>(`/workspaces/${workspace}/billing/auto-renew`, { enabled }, { name: 'billing.write' }),
+
   transactions: (workspace: string, params: { page?: number; limit?: number } = {}) =>
     alova.Get<Paginated<Transaction>>(`/workspaces/${workspace}/billing/transactions`, { name: 'billing.transactions', params, hitSource: 'billing.write' }),
+
+  invoice: (workspace: string, reference: string) =>
+    alova.Get<Blob>(`/workspaces/${workspace}/billing/transactions/${reference}/invoice`, { name: 'billing.invoice', cacheFor: 0 }),
 };

@@ -15,9 +15,10 @@ use Illuminate\Support\Facades\Http;
 use Valorin\Random\Random;
 
 /**
- * Flutterwave Standard checkout: `intent` returns a hosted payment link, `verify` confirms by reference.
+ * Flutterwave Standard checkout: `intent` returns a hosted payment link, `verify` confirms by reference,
+ * and cards saved from a payment are charged again with tokenized charges.
  */
-class FlutterwaveProcessor implements PaymentInterface
+class FlutterwaveProcessor implements ChargesSavedCards, PaymentInterface
 {
     public const BASE_URL = 'https://api.flutterwave.com/v3';
 
@@ -35,7 +36,7 @@ class FlutterwaveProcessor implements PaymentInterface
         ?callable $errorCallback = null,
         ?bool $respond = true
     ) {
-        $reference = Provider::config('reference_prefix', 'TRX-') . Random::string(20, false, true, true, false);
+        $reference = $this->reference();
 
         try {
             $data = $this->client()->post('payments', [
@@ -146,7 +147,7 @@ class FlutterwaveProcessor implements PaymentInterface
         ?bool $respond = true
     ) {
         $bank = $this->user?->data['bank'] ?? [];
-        $reference = Provider::config('reference_prefix', 'TRX-') . Random::string(20, false, true, true, false);
+        $reference = $this->reference();
 
         try {
             $data = $this->client()->post('transfers', [
@@ -177,6 +178,65 @@ class FlutterwaveProcessor implements PaymentInterface
             'reference' => $reference,
             'status_code' => HttpStatus::OK,
         ]);
+    }
+
+    public function savedCard(array $payment): ?array
+    {
+        $card = $payment['card'] ?? null;
+
+        if (! is_array($card) || empty($card['token'])) {
+            return null;
+        }
+
+        return [
+            'token' => $card['token'],
+            'email' => $payment['customer']['email'] ?? $this->user?->email,
+            'brand' => $card['type'] ?? null,
+            'last4' => $card['last_4digits'] ?? null,
+            'expiry' => $card['expiry'] ?? null,
+            'country' => $card['country'] ?? null,
+        ];
+    }
+
+    public function chargeSavedCard(array $card, int|float $amount, string $currency, ?string $narration = null)
+    {
+        $reference = $this->reference();
+
+        try {
+            $data = $this->client()->post('tokenized-charges', array_filter([
+                'token' => $card['token'],
+                'email' => $card['email'] ?? $this->user?->email,
+                'country' => $card['country'] ?? null,
+                'amount' => $amount,
+                'currency' => $currency,
+                'tx_ref' => $reference,
+                'narration' => $narration,
+            ]))->throw()->json('data');
+        } catch (RequestException|ConnectionException $e) {
+            $data = ['status' => 'failed', 'error' => $e];
+        }
+
+        if (($data['status'] ?? null) !== 'successful') {
+            $error = $data['error'] ?? new \ErrorException('The card was not charged, status is ' . ($data['status'] ?? 'unknown'));
+
+            return new CustomObject([
+                ...$this->failed($error, HttpStatus::PAYMENT_REQUIRED, null)->toArray(),
+                'reference' => $reference,
+            ]);
+        }
+
+        return new CustomObject([
+            'amount' => $amount,
+            'message' => 'Card charged',
+            'payload' => $data,
+            'reference' => $reference,
+            'status_code' => HttpStatus::OK,
+        ]);
+    }
+
+    protected function reference(): string
+    {
+        return Provider::config('reference_prefix', 'TRX-') . Random::string(20, false, true, true, false);
     }
 
     protected function client(): PendingRequest

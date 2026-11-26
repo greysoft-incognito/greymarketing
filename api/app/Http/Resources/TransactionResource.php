@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Subscription;
+use App\Services\Billing\Invoice;
 use Illuminate\Http\Request;
 use Toneflix\ResourceModifier\Services\Json\JsonResource;
 
@@ -21,6 +22,7 @@ class TransactionResource extends JsonResource
             'discount' => (float) $this->discount,
             'due' => (float) $this->due,
             'type' => $this->type,
+            'invoice_number' => Invoice::numberFor($this->resource),
             'subscription' => $this->whenLoaded('transactable', fn () => $this->transactable instanceof Subscription ? [
                 'id' => $this->transactable->ulid,
                 'currency' => $this->transactable->currency,
