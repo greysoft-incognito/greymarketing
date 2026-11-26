@@ -158,7 +158,7 @@ class VcardReader extends ContactFileReader
         foreach ($parts as $part) {
             [$key, $value] = array_pad(explode('=', $part, 2), 2, null);
             $value === null
-                ? $params['TYPE'] = trim(($params['TYPE'] ?? '').','.$key, ',')
+                ? $params['TYPE'] = trim(($params['TYPE'] ?? '') . ',' . $key, ',')
                 : $params[strtoupper($key)] = $value;
         }
 
