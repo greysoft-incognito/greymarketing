@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, LoaderCircle } from 'lucide-vue-next';
 import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ApiError } from '@/api';
 import AuthShell from '@/components/app/AuthShell.vue';
 import FormField from '@/components/app/FormField.vue';
@@ -11,11 +11,12 @@ import { Input } from '@/components/ui/input';
 import { useSession } from '@/stores/session';
 import { useWorkspace } from '@/stores/workspace';
 
+const route = useRoute();
 const router = useRouter();
 const session = useSession();
 const workspace = useWorkspace();
 
-const form = reactive({ firstname: '', lastname: '', business: '', email: '', phone: '', password: '' });
+const form = reactive({ firstname: '', lastname: '', business: '', email: typeof route.query.email === 'string' ? route.query.email : '', phone: '', password: '' });
 const error = ref<ApiError | null>(null);
 const loading = ref(false);
 
@@ -46,7 +47,7 @@ async function submit() {
       await workspace.rename(form.business.trim());
     }
 
-    await router.replace({ name: 'dashboard' });
+    await router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'dashboard' });
   } catch (e) {
     error.value = e instanceof ApiError ? e : new ApiError('Something went wrong. Please try again.', 0);
   } finally {
@@ -117,7 +118,7 @@ async function submit() {
 
       <p class="text-center text-[13px] text-muted-foreground">
         Already have an account?
-        <RouterLink :to="{ name: 'login' }" class="font-medium text-foreground">
+        <RouterLink :to="{ name: 'login', query: route.query }" class="font-medium text-foreground">
           Sign in
         </RouterLink>
       </p>

@@ -14,7 +14,7 @@ const route = useRoute();
 const router = useRouter();
 const session = useSession();
 
-const form = reactive({ email: '', password: '' });
+const form = reactive({ email: typeof route.query.email === 'string' ? route.query.email : '', password: '' });
 const error = ref<ApiError | null>(null);
 const loading = ref(false);
 
@@ -84,7 +84,7 @@ async function submit() {
 
       <p class="text-center text-[13px] text-muted-foreground">
         New here?
-        <RouterLink :to="{ name: 'signup' }" class="font-medium text-foreground">
+        <RouterLink :to="{ name: 'signup', query: route.query }" class="font-medium text-foreground">
           Create an account
         </RouterLink>
       </p>

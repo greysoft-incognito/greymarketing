@@ -127,6 +127,9 @@ const limit = (value: number | null) => value === null ? 'No limit' : formatNumb
           <TableHead class="hidden text-right md:table-cell">
             SMS / mo
           </TableHead>
+          <TableHead class="hidden text-right lg:table-cell">
+            Seats
+          </TableHead>
           <TableHead class="hidden text-right sm:table-cell">
             Subscribers
           </TableHead>
@@ -161,6 +164,9 @@ const limit = (value: number | null) => value === null ? 'No limit' : formatNumb
             </TableCell>
             <TableCell class="hidden text-right tabular-nums md:table-cell">
               {{ limit(plan.limits.sms) }}
+            </TableCell>
+            <TableCell class="hidden text-right tabular-nums lg:table-cell">
+              {{ limit(plan.limits.seats) }}
             </TableCell>
             <TableCell class="hidden text-right tabular-nums sm:table-cell">
               {{ formatNumber(plan.active_subscriptions_count ?? 0) }}
@@ -199,12 +205,12 @@ const limit = (value: number | null) => value === null ? 'No limit' : formatNumb
         </template>
         <template v-else-if="loading">
           <TableRow v-for="n in 4" :key="n">
-            <TableCell :colspan="8">
+            <TableCell :colspan="9">
               <Skeleton class="h-9" />
             </TableCell>
           </TableRow>
         </template>
-        <TableEmpty v-if="empty" :colspan="8">
+        <TableEmpty v-if="empty" :colspan="9">
           <div class="grid place-items-center gap-3 py-6">
             <span class="grid size-11 place-items-center rounded-full bg-brand-soft text-brand"><Layers class="size-5" /></span>
             <span>No plans yet.</span>
