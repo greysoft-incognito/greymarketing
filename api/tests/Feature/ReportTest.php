@@ -82,7 +82,7 @@ class ReportTest extends TestCase
         $connections = collect($response->json('data.connections'));
 
         $this->assertSame(
-            ['id' => $this->termii->ulid, 'name' => 'Termii', 'provider' => 'termii', 'channel' => 'sms', 'sent' => 3, 'delivered' => 2, 'failed' => 3, 'delivery_rate' => 66.7, 'opened' => null, 'open_rate' => null],
+            ['id' => $this->termii->ulid, 'name' => 'Termii', 'provider' => 'termii', 'channel' => 'sms', 'sent' => 3, 'delivered' => 2, 'failed' => 3, 'delivery_rate' => 66.7, 'opened' => null, 'open_rate' => null, 'clicked' => null, 'click_rate' => null],
             $connections->first()
         );
         $this->assertNull($connections->last()['id']);
@@ -99,30 +99,33 @@ class ReportTest extends TestCase
             ->assertJsonPath('data.campaigns', 1)
             ->assertJsonPath('data.counts.delivered', 1)
             ->assertJsonPath('data.counts.failed', 0)
-            ->assertJsonPath('data.opens', ['emails' => 1, 'opened' => 0, 'open_rate' => 0]);
+            ->assertJsonPath('data.engagement', ['emails' => 1, 'opened' => 0, 'open_rate' => 0, 'clicked' => 0, 'click_rate' => 0]);
 
-        $this->getJson($this->url('?channel=sms'))->assertOk()->assertJsonPath('data.opens', null);
+        $this->getJson($this->url('?channel=sms'))->assertOk()->assertJsonPath('data.engagement', null);
     }
 
-    public function testReportCountsUniqueEmailOpens(): void
+    public function testReportCountsUniqueEmailOpensAndClicks(): void
     {
         $campaign = $this->campaign('email', ['delivered', 'delivered', 'sent', 'failed'], now());
         $this->campaign('sms', ['delivered'], now(), $this->termii);
-        $campaign->messages()->orderBy('id')->limit(1)->update(['opened_at' => now(), 'opens_count' => 3]);
+        $campaign->messages()->orderBy('id')->limit(1)->update(['opened_at' => now(), 'opens_count' => 3, 'clicked_at' => now(), 'clicks_count' => 2]);
 
         $response = $this->getJson($this->url())
             ->assertOk()
-            ->assertJsonPath('data.opens', ['emails' => 3, 'opened' => 1, 'open_rate' => 33.3]);
+            ->assertJsonPath('data.engagement', ['emails' => 3, 'opened' => 1, 'open_rate' => 33.3, 'clicked' => 1, 'click_rate' => 33.3]);
 
         $email = collect($response->json('data.connections'))->firstWhere('channel', 'email');
 
         $this->assertSame(1, $email['opened']);
         $this->assertSame(33.3, $email['open_rate']);
+        $this->assertSame(1, $email['clicked']);
 
         $row = collect($this->getJson($this->url('/campaigns'))->json('data'))->firstWhere('id', $campaign->ulid);
 
         $this->assertSame(1, $row['counts']['opened']);
         $this->assertSame(33.3, $row['open_rate']);
+        $this->assertSame(1, $row['counts']['clicked']);
+        $this->assertSame(33.3, $row['click_rate']);
     }
 
     public function testCampaignsAreListedWithTheirDeliveryCounts(): void
@@ -138,7 +141,7 @@ class ReportTest extends TestCase
             ->assertJsonPath('data.0.id', $newer->ulid)
             ->assertJsonPath('data.1.id', $older->ulid)
             ->assertJsonPath('data.1.connection.id', $this->termii->ulid)
-            ->assertJsonPath('data.1.counts', ['sent' => 2, 'delivered' => 1, 'failed' => 1, 'opened' => null])
+            ->assertJsonPath('data.1.counts', ['sent' => 2, 'delivered' => 1, 'failed' => 1, 'opened' => null, 'clicked' => null])
             ->assertJsonPath('data.1.delivery_rate', 50)
             ->assertJsonPath('data.1.open_rate', null)
             ->assertJsonPath('data.0.counts.opened', 0)

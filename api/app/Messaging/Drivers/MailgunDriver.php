@@ -3,16 +3,17 @@
 namespace App\Messaging\Drivers;
 
 use App\Messaging\Contracts\ReceivesDeliveryReports;
-use App\Messaging\Contracts\ReportsOpens;
+use App\Enums\Engagement;
+use App\Messaging\Contracts\ReportsEngagement;
 use App\Messaging\Contracts\SendsEmail;
 use App\Messaging\Data\DeliveryReport;
 use App\Messaging\Data\EmailMessage;
-use App\Messaging\Data\OpenReport;
+use App\Messaging\Data\EngagementReport;
 use App\Messaging\Data\SendResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
-class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, ReportsOpens, SendsEmail
+class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, ReportsEngagement, SendsEmail
 {
     protected string $label = 'Mailgun';
 
@@ -35,7 +36,8 @@ class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, R
                 'subject' => $message->subject,
                 'html' => $message->html,
                 'text' => $message->text,
-                'o:tracking-opens' => $message->trackOpens ? 'yes' : null,
+                'o:tracking-opens' => $message->trackEngagement ? 'yes' : null,
+                'o:tracking-clicks' => $message->trackEngagement ? 'htmlonly' : null,
                 ...collect($message->headers)->mapWithKeys(fn ($value, $name) => ["h:{$name}" => $value])->all(),
             ])
         ));
@@ -71,24 +73,29 @@ class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, R
     }
 
     /**
-     * Opens arrive on the same webhook as delivery events, so they need the signing key too.
+     * Opens and clicks arrive on the same webhook as delivery events, so they need the signing key too.
      */
-    public function reportsOpens(): bool
+    public function reportsEngagement(): bool
     {
         return (string) $this->credential('webhook_signing_key') !== '';
     }
 
-    public function parseOpenReport(Request $request): ?OpenReport
+    public function parseEngagementReport(Request $request): ?EngagementReport
     {
         $id = $request->input('event-data.message.headers.message-id');
+        $type = match ($request->input('event-data.event')) {
+            'opened' => Engagement::OPEN,
+            'clicked' => Engagement::CLICK,
+            default => null,
+        };
 
-        if (! $this->hasValidSignature($request) || $request->input('event-data.event') !== 'opened' || ! $id) {
+        if (! $type || ! $id || ! $this->hasValidSignature($request)) {
             return null;
         }
 
         $timestamp = $request->input('event-data.timestamp');
 
-        return new OpenReport($id, is_numeric($timestamp) ? Carbon::createFromTimestamp((int) $timestamp) : null);
+        return new EngagementReport($id, $type, is_numeric($timestamp) ? Carbon::createFromTimestamp((int) $timestamp) : null);
     }
 
     protected function hasValidSignature(Request $request): bool

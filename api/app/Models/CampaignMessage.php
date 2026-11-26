@@ -29,6 +29,8 @@ class CampaignMessage extends Model
             'delivered_at' => 'datetime',
             'opened_at' => 'datetime',
             'opens_count' => 'integer',
+            'clicked_at' => 'datetime',
+            'clicks_count' => 'integer',
         ];
     }
 

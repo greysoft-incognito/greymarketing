@@ -98,7 +98,9 @@ const funnel = computed(() => {
     { label: 'Recipients', value: queued },
     { label: `Accepted by ${campaign.value?.connection?.name ?? 'provider'}`, value: counts.value.sent + counts.value.delivered },
     { label: 'Delivered', value: counts.value.delivered },
-    ...(report.value?.opened != null ? [{ label: 'Opened', value: report.value.opened }] : []),
+    ...(report.value?.engagement
+      ? [{ label: 'Opened', value: report.value.engagement.opened }, { label: 'Clicked a link', value: report.value.engagement.clicked }]
+      : []),
   ].map(row => ({ ...row, width: queued ? (row.value / queued) * 100 : 0 }));
 });
 
@@ -159,7 +161,10 @@ async function cancel() {
       <StatCard label="Recipients" :value="formatNumber(report.recipients)" :note="live ? 'Sending now' : `${formatNumber(counts.skipped)} skipped`" />
       <StatCard label="Delivered" :value="formatNumber(counts.delivered)" :note="`${report.delivery_rate}% of accepted`" />
       <StatCard label="Failed" :value="formatNumber(counts.failed)" :note="`${report.failure_rate}% of attempts`" />
-      <StatCard v-if="report.opened !== null" label="Opened" :value="formatNumber(report.opened)" :note="`${report.open_rate}% of accepted`" />
+      <template v-if="report.engagement">
+        <StatCard label="Opened" :value="formatNumber(report.engagement.opened)" :note="`${report.engagement.open_rate}% of accepted`" />
+        <StatCard label="Clicked" :value="formatNumber(report.engagement.clicked)" :note="`${report.engagement.click_rate}% of accepted`" />
+      </template>
       <StatCard label="Opted out" :value="formatNumber(report.opt_outs)" :note="`${percent(report.opt_outs, handedOver)} since sending`" />
     </div>
 
@@ -168,8 +173,8 @@ async function cancel() {
         <CardTitle>Delivery funnel</CardTitle>
         <CardDescription>
           From provider delivery receipts. Some networks don't send receipts, so those stay at Sent.
-          <template v-if="report.opened !== null">
-            Opens count each recipient once. Mail apps that block images aren't counted, and some privacy features open every email.
+          <template v-if="report.engagement">
+            Opens and clicks count each recipient once. Mail apps that block images aren't counted as opens, and some privacy and security tools open every email or link.
           </template>
         </CardDescription>
       </CardHeader>
@@ -226,6 +231,9 @@ async function cancel() {
               </Badge>
               <span v-if="message.opened_at" class="ml-2 text-xs text-muted-foreground" :title="`First opened ${formatDateTime(message.opened_at)}`">
                 Opened{{ message.opens_count > 1 ? ` ×${message.opens_count}` : '' }}
+              </span>
+              <span v-if="message.clicked_at" class="text-xs text-muted-foreground" :title="`First clicked ${formatDateTime(message.clicked_at)}`">
+                · Clicked{{ message.clicks_count > 1 ? ` ×${message.clicks_count}` : '' }}
               </span>
             </TableCell>
             <TableCell class="hidden max-w-[280px] truncate text-[13px] text-muted-foreground lg:table-cell" :title="message.error ?? message.provider_message_id ?? ''">

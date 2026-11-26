@@ -57,9 +57,11 @@ const kpis = computed(() => {
 
   const sentChange = percentChange(data.this_month.sent, data.last_month.sent);
   const rateChange = data.last_month.sent ? Math.round((data.this_month.delivery_rate - data.last_month.delivery_rate) * 10) / 10 : null;
-  const opens = data.this_month.email_opens;
-  const lastOpens = data.last_month.email_opens;
-  const openChange = opens.emails && lastOpens.emails ? Math.round((opens.open_rate - lastOpens.open_rate) * 10) / 10 : null;
+  const email = data.this_month.email_engagement;
+  const lastEmail = data.last_month.email_engagement;
+  const compare = (now: number, before: number) => (email.emails && lastEmail.emails ? Math.round((now - before) * 10) / 10 : null);
+  const openChange = compare(email.open_rate, lastEmail.open_rate);
+  const clickChange = compare(email.click_rate, lastEmail.click_rate);
 
   return [
     {
@@ -78,10 +80,17 @@ const kpis = computed(() => {
     },
     {
       label: 'Email open rate',
-      value: opens.emails ? `${opens.open_rate}%` : '–',
+      value: email.emails ? `${email.open_rate}%` : '–',
       delta: openChange === null ? null : `${openChange >= 0 ? '+' : '−'}${Math.abs(openChange)} pts`,
       trend: openChange === null ? 'flat' : openChange >= 0 ? 'up' : 'down',
-      note: openChange === null ? `${formatNumber(opens.opened)} opened this month` : 'vs last month',
+      note: openChange === null ? `${formatNumber(email.opened)} opened this month` : 'vs last month',
+    },
+    {
+      label: 'Email click rate',
+      value: email.emails ? `${email.click_rate}%` : '–',
+      delta: clickChange === null ? null : `${clickChange >= 0 ? '+' : '−'}${Math.abs(clickChange)} pts`,
+      trend: clickChange === null ? 'flat' : clickChange >= 0 ? 'up' : 'down',
+      note: clickChange === null ? `${formatNumber(email.clicked)} clicked a link this month` : 'vs last month',
     },
     {
       label: 'Contacts',
@@ -89,13 +98,6 @@ const kpis = computed(() => {
       delta: `+${formatNumber(data.contacts.added_this_month)}`,
       trend: data.contacts.added_this_month ? 'up' : 'flat',
       note: 'added this month',
-    },
-    {
-      label: 'Opt-outs',
-      value: formatNumber(data.contacts.opt_outs_this_month),
-      delta: null,
-      trend: 'flat',
-      note: 'unsubscribes and STOP replies this month',
     },
   ] as const;
 });

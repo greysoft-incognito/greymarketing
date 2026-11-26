@@ -6,7 +6,7 @@ final readonly class EmailMessage
 {
     /**
      * @param  array<string, string>  $headers  Extra headers, such as List-Unsubscribe.
-     * @param  bool  $trackOpens  Ask the provider to track opens itself.
+     * @param  bool  $trackEngagement  Ask the provider to track opens and clicks itself.
      */
     public function __construct(
         public string $to,
@@ -17,6 +17,6 @@ final readonly class EmailMessage
         public ?string $fromEmail = null,
         public ?string $fromName = null,
         public array $headers = [],
-        public bool $trackOpens = false,
+        public bool $trackEngagement = false,
     ) {}
 }

@@ -5,7 +5,7 @@ namespace App\Services\Campaigns;
 use App\Enums\CampaignStatus;
 use App\Enums\Channel;
 use App\Enums\MessageStatus;
-use App\Messaging\Contracts\ReportsOpens;
+use App\Messaging\Contracts\ReportsEngagement;
 use App\Messaging\Contracts\SendsEmail;
 use App\Messaging\Contracts\SendsSms;
 use App\Messaging\Data\EmailMessage;
@@ -28,7 +28,7 @@ class CampaignSender
     public function __construct(
         protected TemplateRenderer $renderer,
         protected UsageLimits $limits,
-        protected OpenTracker $opens,
+        protected EmailTracker $tracker,
     ) {}
 
     /**
@@ -124,11 +124,11 @@ class CampaignSender
         $data = [...$contact->mergeData(), 'unsubscribe_url' => $unsubscribeUrl];
 
         if ($campaign->channel === Channel::EMAIL && $driver instanceof SendsEmail) {
-            $providerTracksOpens = $driver instanceof ReportsOpens && $driver->reportsOpens();
+            $providerTracks = $driver instanceof ReportsEngagement && $driver->reportsEngagement();
             $html = $this->renderer->render($campaign->html, $data, escape: true);
 
-            if ($html !== null && ! $providerTracksOpens) {
-                $html = $this->opens->withPixel($html, $this->opens->pixelUrl($message));
+            if ($html !== null && ! $providerTracks) {
+                $html = $this->tracker->track($message, $html, except: [$unsubscribeUrl]);
             }
 
             return $driver->sendEmail(new EmailMessage(
@@ -141,7 +141,7 @@ class CampaignSender
                     'List-Unsubscribe' => "<{$unsubscribeUrl}>",
                     'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
                 ],
-                trackOpens: $providerTracksOpens,
+                trackEngagement: $providerTracks,
             ));
         }
 

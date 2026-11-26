@@ -5,27 +5,27 @@ namespace App\Http\Controllers\Audience;
 use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Messaging\Contracts\ReceivesDeliveryReports;
-use App\Messaging\Contracts\ReportsOpens;
+use App\Messaging\Contracts\ReportsEngagement;
 use App\Models\ProviderConnection;
 use App\Services\Campaigns\DeliveryReportRecorder;
-use App\Services\Campaigns\OpenTracker;
+use App\Services\Campaigns\EmailTracker;
 use Illuminate\Http\Request;
 
 /**
- * Receives delivery status and open callbacks from providers.
+ * Receives delivery status, open and click callbacks from providers.
  */
 class DeliveryReportController extends Controller
 {
-    public function __invoke(Request $request, ProviderConnection $connection, DeliveryReportRecorder $recorder, OpenTracker $opens)
+    public function __invoke(Request $request, ProviderConnection $connection, DeliveryReportRecorder $recorder, EmailTracker $tracker)
     {
         $driver = $connection->driver();
 
         abort_unless($driver instanceof ReceivesDeliveryReports, HttpStatus::NOT_FOUND->value);
 
-        $open = $driver instanceof ReportsOpens ? $driver->parseOpenReport($request) : null;
+        $engagement = $driver instanceof ReportsEngagement ? $driver->parseEngagementReport($request) : null;
 
-        if ($open) {
-            $opens->recordReport($connection, $open);
+        if ($engagement) {
+            $tracker->recordReport($connection, $engagement);
 
             return response()->noContent();
         }
