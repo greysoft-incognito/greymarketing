@@ -211,6 +211,8 @@ class BillingTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.reference', $reference)
             ->assertJsonPath('data.0.method', 'flutterwave')
-            ->assertJsonPath('data.0.due', 5000);
+            ->assertJsonPath('data.0.due', 5000)
+            ->assertJsonPath('data.0.subscription.currency', 'NGN')
+            ->assertJsonPath('data.0.subscription.plan.name', $this->starter->name);
     }
 }
