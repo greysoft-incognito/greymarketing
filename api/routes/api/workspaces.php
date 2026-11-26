@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('providers', [ProviderConnectionController::class, 'catalog'])->name('providers.catalog');
 
     Route::apiResource('workspaces', WorkspaceController::class);
+    Route::post('workspaces/{workspace}/leave', [WorkspaceController::class, 'leave'])->name('workspaces.leave');
 
     Route::scopeBindings()->prefix('workspaces/{workspace}')->name('workspaces.')->group(function () {
         Route::get('stats', StatsController::class)->name('stats');

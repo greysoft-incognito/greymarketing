@@ -88,4 +88,20 @@ class WorkspaceController extends Controller
             'status_code' => HttpStatus::ACCEPTED,
         ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
     }
+
+    /**
+     * Remove the signed-in member from the workspace.
+     */
+    public function leave(Request $request, Workspace $workspace)
+    {
+        $this->authorize('leave', $workspace);
+
+        $workspace->members()->detach($request->user());
+
+        return (new WorkspaceResource($workspace))->additional([
+            'message' => 'You left ' . $workspace->name . '.',
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
+    }
 }

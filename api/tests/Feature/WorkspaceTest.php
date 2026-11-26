@@ -84,4 +84,36 @@ class WorkspaceTest extends TestCase
             ->assertAccepted()
             ->assertJsonPath('data.default_country', 'KE');
     }
+
+    public function testMembersCanLeaveAWorkspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $member = User::factory()->create();
+        $workspace->members()->attach($member, ['role' => 'admin']);
+
+        Sanctum::actingAs($member);
+
+        $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertAccepted();
+
+        $this->assertNull($workspace->roleOf($member));
+        $this->getJson("/api/workspaces/{$workspace->ulid}")->assertForbidden();
+    }
+
+    public function testOwnerCannotLeaveTheirWorkspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertForbidden();
+    }
+
+    public function testNonMembersCannotLeaveAWorkspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertForbidden();
+    }
 }

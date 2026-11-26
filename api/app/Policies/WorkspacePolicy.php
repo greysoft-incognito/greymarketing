@@ -25,6 +25,14 @@ class WorkspacePolicy
         return (bool) $workspace->roleOf($user)?->canManage();
     }
 
+    /**
+     * Any member except the owner may leave.
+     */
+    public function leave(User $user, Workspace $workspace): bool
+    {
+        return $workspace->owner_id !== $user->id && $workspace->roleOf($user) !== null;
+    }
+
     public function delete(User $user, Workspace $workspace): bool
     {
         return $workspace->owner_id === $user->id;
