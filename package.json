@@ -10,6 +10,10 @@
         "api:build": "pnpm --filter ./api build",
         "app:dev": "pnpm --filter @greymarketing/app dev",
         "app:build": "pnpm --filter @greymarketing/app build",
-        "app:typecheck": "pnpm --filter @greymarketing/app typecheck"
+        "app:typecheck": "pnpm --filter @greymarketing/app typecheck",
+        "app:deploy": "pnpm app:build && wrangler deploy"
+    },
+    "devDependencies": {
+        "wrangler": "^4.168.0"
     }
 }
