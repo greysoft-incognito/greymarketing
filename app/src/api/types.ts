@@ -67,6 +67,12 @@ export interface Subscription {
   status: 'pending' | 'active' | 'cancelled' | 'expired';
   amount: number;
   currency: string;
+  /** Whether the saved card is charged for the next period. */
+  auto_renew: boolean;
+  /** When the next renewal charge is due; null unless auto-renewal is on. */
+  renews_at: string | null;
+  /** The card renewals are charged to. */
+  card: { brand: string | null; last4: string | null; expiry: string | null } | null;
   starts_at: string | null;
   ends_at: string | null;
   cancelled_at: string | null;
@@ -81,6 +87,8 @@ export interface Transaction {
   discount: number;
   due: number;
   type: string;
+  /** Set once a subscription payment completes and has a PDF invoice. */
+  invoice_number: string | null;
   subscription: { id: string; currency: string; plan: Pick<Plan, 'name' | 'interval'> } | null;
   created_at: string;
 }

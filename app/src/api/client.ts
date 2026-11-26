@@ -50,6 +50,10 @@ export const alova = createAlova({
         return null;
       }
 
+      if (response.ok && !response.headers.get('content-type')?.includes('json')) {
+        return response.blob();
+      }
+
       const body = await response.json().catch(() => ({}));
 
       if (response.status === 401) {

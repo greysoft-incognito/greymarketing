@@ -12,10 +12,10 @@ export function toCsv(rows: Array<Array<string | number | null | undefined>>): s
 }
 
 /**
- * Hand the browser a CSV file to save.
+ * Hand the browser a file to save.
  */
-export function downloadCsv(name: string, rows: Array<Array<string | number | null | undefined>>): void {
-  const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
+export function downloadBlob(name: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
 
   link.href = url;
@@ -23,4 +23,11 @@ export function downloadCsv(name: string, rows: Array<Array<string | number | nu
   link.click();
 
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Hand the browser a CSV file to save.
+ */
+export function downloadCsv(name: string, rows: Array<Array<string | number | null | undefined>>): void {
+  downloadBlob(name, new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
 }
