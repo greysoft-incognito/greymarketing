@@ -50,7 +50,8 @@ Add these under **Settings → Secrets and variables → Actions** (repository s
 | `DEPLOY_HOST` | yes | Server hostname or IP |
 | `DEPLOY_USER` | yes | SSH user that owns `DEPLOY_PATH`, e.g. `deploy` |
 | `DEPLOY_PATH` | yes | Absolute base path, e.g. `/var/www/greymarketing-api` |
-| `DEPLOY_SSH_KEY` | yes | Private key (the whole file) whose public key is in the user's `~/.ssh/authorized_keys` |
+| `DEPLOY_SSH_KEY` | this or `DEPLOY_PASSWORD` | Private key (the whole file) whose public key is in the user's `~/.ssh/authorized_keys` |
+| `DEPLOY_PASSWORD` | this or `DEPLOY_SSH_KEY` | The SSH user's password. Used only when `DEPLOY_SSH_KEY` is empty, and needs `PasswordAuthentication yes` on the server |
 | `DEPLOY_KNOWN_HOSTS` | recommended | Output of `ssh-keyscan -H <host>`. Without it the host key is trusted on first use for every run |
 | `DEPLOY_PORT` | no | SSH port. Default `22` |
 
@@ -63,7 +64,7 @@ Add these under **Settings → Secrets and variables → Actions** (repository s
 | `DEPLOY_KEEP_RELEASES` | `5` | Releases kept on the server |
 | `DEPLOY_RELOAD_COMMAND` | unset | Run after the switch to clear OPcache, e.g. `sudo systemctl reload php8.5-fpm` |
 
-Create a dedicated key pair for deploys:
+Set one of `DEPLOY_SSH_KEY` or `DEPLOY_PASSWORD`. A key is safer and is used when both are set. To create a dedicated key pair for deploys:
 
 ```bash
 ssh-keygen -t ed25519 -C "greymarketing-deploy" -f greymarketing-deploy -N ""
