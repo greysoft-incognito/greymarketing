@@ -45,6 +45,7 @@ class ContactController extends Controller
             ->when($request->filled('subscribed'), fn (Builder $query) => $query->subscribedTo(
                 Channel::from($request->input('subscribed'))
             ))
+            ->with('lists')
             ->latest('id')
             ->paginate($request->input('limit', 30));
 
