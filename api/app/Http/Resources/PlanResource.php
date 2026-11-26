@@ -24,6 +24,7 @@ class PlanResource extends JsonResource
                 'contacts' => $this->contacts_limit,
                 'emails' => $this->emails_limit,
                 'sms' => $this->sms_limit,
+                'seats' => $this->seats_limit,
             ],
             'is_free' => $this->isFree(),
             'is_default' => $this->is_default,

@@ -36,8 +36,15 @@ const routes: RouteRecordRaw[] = [
       { path: 'reports', name: 'reports', component: () => import('@/pages/ReportsPage.vue'), meta: { title: 'Reports' } },
       { path: 'providers', name: 'providers', component: () => import('@/pages/ProvidersPage.vue'), meta: { title: 'Providers' } },
       { path: 'billing', name: 'billing', component: () => import('@/pages/BillingPage.vue'), meta: { title: 'Billing' } },
+      { path: 'team', name: 'team', component: () => import('@/pages/TeamPage.vue'), meta: { title: 'Team' } },
       { path: 'settings', name: 'settings', component: () => import('@/pages/WorkspaceSettingsPage.vue'), meta: { title: 'Workspace settings' } },
     ],
+  },
+  {
+    path: '/invites/:token',
+    name: 'invite',
+    component: () => import('@/pages/InvitePage.vue'),
+    meta: { public: true, title: 'Join a workspace' },
   },
   {
     path: '/admin',

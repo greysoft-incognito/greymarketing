@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { BarChart3, Check, ChevronsUpDown, CreditCard, FileText, LayoutDashboard, Plug, Plus, Send, Settings2, ShieldCheck, Users } from 'lucide-vue-next';
+import { BarChart3, Check, ChevronsUpDown, CreditCard, FileText, LayoutDashboard, Plug, Plus, Send, Settings2, ShieldCheck, Users, UsersRound } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ const workspaceNav: NavItem[] = [
 
 const accountNav: NavItem[] = [
   { to: 'billing', label: 'Billing', icon: CreditCard },
+  { to: 'team', label: 'Team', icon: UsersRound },
   { to: 'settings', label: 'Workspace settings', icon: Settings2 },
 ];
 

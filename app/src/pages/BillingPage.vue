@@ -248,13 +248,14 @@ onMounted(confirmReturn);
     </Button>
   </Alert>
 
-  <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <template v-if="usage">
       <UsageCard label="Emails this month" :usage="usage.emails" />
       <UsageCard label="SMS this month" :usage="usage.sms" />
       <UsageCard label="Contacts" :usage="usage.contacts" />
+      <UsageCard label="Team seats" :usage="usage.seats" />
     </template>
-    <Skeleton v-for="n in (summaryError ? 0 : 3)" v-else :key="n" class="h-[106px] rounded-xl" />
+    <Skeleton v-for="n in (summaryError ? 0 : 4)" v-else :key="n" class="h-[106px] rounded-xl" />
   </div>
 
   <Card v-if="summary" class="flex-row flex-wrap items-center justify-between gap-4 px-5 py-[18px]">

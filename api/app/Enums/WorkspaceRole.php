@@ -15,4 +15,9 @@ enum WorkspaceRole: string
     {
         return $this !== self::MEMBER;
     }
+
+    public function label(): string
+    {
+        return ucfirst($this->value);
+    }
 }

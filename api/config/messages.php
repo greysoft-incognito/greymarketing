@@ -154,6 +154,18 @@ return [
             'If you need any further assistance please reachout to support.',
         ],
     ],
+    'team_invitation' => [
+        'subject' => ':inviter invited you to :workspace on :app_name',
+        'lines' => [
+            'Hello,',
+            ':inviter invited you to join <b>:workspace</b> on :app_name as a :role.',
+            [
+                'link' => ':app_url/invites/:token',
+                'title' => 'View invite',
+            ],
+            'This invite works for :days days. If you were not expecting it, you can ignore this email.',
+        ],
+    ],
     'welcome' => [
         'subject' => ':firstname, welcome to :app_name.',
         'lines' => [

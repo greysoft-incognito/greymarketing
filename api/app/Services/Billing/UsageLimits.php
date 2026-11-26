@@ -39,6 +39,25 @@ class UsageLimits
         return max(0, $limit - $this->sent($workspace, $channel));
     }
 
+    /**
+     * How many more people the workspace may invite, or null for no limit. Pending invites hold a seat.
+     */
+    public function seatRoom(Workspace $workspace): ?int
+    {
+        $limit = $workspace->plan()?->seats_limit;
+
+        if ($limit === null) {
+            return null;
+        }
+
+        return max(0, $limit - $this->seatsUsed($workspace));
+    }
+
+    public function seatsUsed(Workspace $workspace): int
+    {
+        return $workspace->members()->count() + $workspace->invitations()->pending()->count();
+    }
+
     public function sent(Workspace $workspace, Channel $channel): int
     {
         return (int) $workspace->usage()
@@ -77,6 +96,7 @@ class UsageLimits
             'contacts' => ['used' => $workspace->contacts()->count(), 'limit' => $plan?->contacts_limit],
             'emails' => ['used' => $this->sent($workspace, Channel::EMAIL), 'limit' => $plan?->emails_limit],
             'sms' => ['used' => $this->sent($workspace, Channel::SMS), 'limit' => $plan?->sms_limit],
+            'seats' => ['used' => $this->seatsUsed($workspace), 'limit' => $plan?->seats_limit],
         ];
     }
 }

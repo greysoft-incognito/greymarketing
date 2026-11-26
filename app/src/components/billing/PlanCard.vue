@@ -40,6 +40,7 @@ const features = computed(() => [
   limit(props.plan.limits.contacts, 'contacts'),
   `${limit(props.plan.limits.emails, 'emails')} a month`,
   `${limit(props.plan.limits.sms, 'SMS')} a month`,
+  props.plan.limits.seats === 1 ? '1 team seat' : limit(props.plan.limits.seats, 'team seats'),
 ]);
 </script>
 

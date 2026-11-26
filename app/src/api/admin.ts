@@ -17,6 +17,7 @@ export interface PlanInput {
   contacts_limit?: number | null;
   emails_limit?: number | null;
   sms_limit?: number | null;
+  seats_limit?: number | null;
   is_active?: boolean;
   is_default?: boolean;
   sort?: number;

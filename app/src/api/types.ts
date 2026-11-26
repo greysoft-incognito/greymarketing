@@ -38,9 +38,31 @@ export interface Workspace {
   id: string;
   name: string;
   default_country: string;
-  role?: 'owner' | 'admin' | 'member';
+  role?: WorkspaceRole;
   is_owner: boolean;
   plan?: { id: string; name: string } | null;
+  created_at: string;
+}
+
+export type WorkspaceRole = 'owner' | 'admin' | 'member';
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: WorkspaceRole;
+  is_you: boolean;
+  joined_at: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: Exclude<WorkspaceRole, 'owner'>;
+  workspace?: { id: string; name: string };
+  invited_by?: { id: string; name: string } | null;
+  is_expired: boolean;
+  expires_at: string;
   created_at: string;
 }
 
@@ -57,7 +79,7 @@ export interface Plan {
   price: number;
   currency: string;
   interval: 'month' | 'year';
-  limits: { contacts: number | null; emails: number | null; sms: number | null };
+  limits: { contacts: number | null; emails: number | null; sms: number | null; seats: number | null };
   is_free: boolean;
   is_default: boolean;
 }
@@ -98,7 +120,7 @@ export interface UsageItem {
 export interface Billing {
   plan: Plan | null;
   subscription: Subscription | null;
-  usage: { contacts: UsageItem; emails: UsageItem; sms: UsageItem };
+  usage: { contacts: UsageItem; emails: UsageItem; sms: UsageItem; seats: UsageItem };
   period: { starts_at: string; ends_at: string };
 }
 

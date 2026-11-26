@@ -2,11 +2,14 @@
 
 use App\Http\Controllers\Audience\CountryController;
 use App\Http\Controllers\Billing\PlanController;
+use App\Http\Controllers\User\InvitationController as InviteResponseController;
 use App\Http\Controllers\Workspace\BillingController;
 use App\Http\Controllers\Workspace\CampaignController;
 use App\Http\Controllers\Workspace\ContactController;
 use App\Http\Controllers\Workspace\ContactImportController;
 use App\Http\Controllers\Workspace\ContactListController;
+use App\Http\Controllers\Workspace\InvitationController;
+use App\Http\Controllers\Workspace\MemberController;
 use App\Http\Controllers\Workspace\ProviderConnectionController;
 use App\Http\Controllers\Workspace\ReportController;
 use App\Http\Controllers\Workspace\StatsController;
@@ -16,12 +19,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('plans', PlanController::class)->name('plans.index');
 Route::get('countries', CountryController::class)->name('countries.index');
+Route::get('invites/{token}', [InviteResponseController::class, 'show'])->middleware('throttle:30,1')->name('invites.show');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('providers', [ProviderConnectionController::class, 'catalog'])->name('providers.catalog');
 
     Route::apiResource('workspaces', WorkspaceController::class);
     Route::post('workspaces/{workspace}/leave', [WorkspaceController::class, 'leave'])->name('workspaces.leave');
+    Route::post('invites/{token}/accept', [InviteResponseController::class, 'accept'])->name('invites.accept');
+    Route::post('invites/{token}/decline', [InviteResponseController::class, 'decline'])->name('invites.decline');
 
     Route::scopeBindings()->prefix('workspaces/{workspace}')->name('workspaces.')->group(function () {
         Route::get('stats', StatsController::class)->name('stats');
@@ -49,6 +55,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
         Route::get('campaigns/{campaign}/report', [CampaignController::class, 'report'])->name('campaigns.report');
         Route::get('campaigns/{campaign}/messages', [CampaignController::class, 'messages'])->name('campaigns.messages');
+
+        Route::get('members', [MemberController::class, 'index'])->name('members.index');
+        Route::patch('members/{member:username}', [MemberController::class, 'update'])->name('members.update');
+        Route::delete('members/{member:username}', [MemberController::class, 'destroy'])->name('members.destroy');
+
+        Route::apiResource('invitations', InvitationController::class)->only(['index', 'store', 'destroy']);
+        Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');
 
         Route::get('billing', [BillingController::class, 'show'])->name('billing.show');
         Route::post('billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');

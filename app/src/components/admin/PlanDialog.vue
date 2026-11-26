@@ -31,6 +31,7 @@ const form = reactive({
   contacts_limit: '',
   emails_limit: '',
   sms_limit: '',
+  seats_limit: '',
   sort: '0',
   is_active: true,
   is_default: false,
@@ -61,6 +62,7 @@ watch(open, (value) => {
     contacts_limit: limit(plan?.limits.contacts ?? null),
     emails_limit: limit(plan?.limits.emails ?? null),
     sms_limit: limit(plan?.limits.sms ?? null),
+    seats_limit: limit(plan?.limits.seats ?? null),
     sort: String(plan?.sort ?? 0),
     is_active: plan?.is_active ?? true,
     is_default: plan?.is_default ?? false,
@@ -89,6 +91,7 @@ async function save() {
     contacts_limit: toLimit(form.contacts_limit),
     emails_limit: toLimit(form.emails_limit),
     sms_limit: toLimit(form.sms_limit),
+    seats_limit: toLimit(form.seats_limit),
     sort: Number(form.sort),
     is_active: form.is_active,
     is_default: form.is_default,
@@ -156,6 +159,9 @@ async function save() {
           </FormField>
           <FormField id="plan-sms" label="SMS per month" hint="Empty means no limit." :error="error?.field('sms_limit')">
             <Input id="plan-sms" v-model="form.sms_limit" type="number" min="0" class="tabular-nums" />
+          </FormField>
+          <FormField id="plan-seats" label="Team seats" hint="People in a workspace, owner included. Empty means no limit." :error="error?.field('seats_limit')">
+            <Input id="plan-seats" v-model="form.seats_limit" type="number" min="1" class="tabular-nums" />
           </FormField>
           <FormField id="plan-sort" label="Order" hint="Lower numbers are listed first." :error="error?.field('sort')">
             <Input id="plan-sort" v-model="form.sort" type="number" min="0" max="1000" class="tabular-nums" />

@@ -25,6 +25,7 @@ class Plan extends Model
         'contacts_limit',
         'emails_limit',
         'sms_limit',
+        'seats_limit',
         'is_active',
         'is_default',
         'sort',
@@ -46,6 +47,7 @@ class Plan extends Model
             'contacts_limit' => 'integer',
             'emails_limit' => 'integer',
             'sms_limit' => 'integer',
+            'seats_limit' => 'integer',
             'is_active' => 'boolean',
             'is_default' => 'boolean',
         ];

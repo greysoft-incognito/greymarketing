@@ -18,6 +18,8 @@ import type {
   Envelope,
   MessageStatus,
   ImportUpload,
+  Invitation,
+  Member,
   Paginated,
   Plan,
   Provider,
@@ -30,6 +32,7 @@ import type {
   User,
   Workspace,
   WorkspaceReport,
+  WorkspaceRole,
   WorkspaceStats,
 } from './types';
 import { alova } from './client';
@@ -74,7 +77,7 @@ export const workspaces = {
 
   stats: (id: string, days = 14) => alova.Get<Envelope<WorkspaceStats>>(`/workspaces/${id}/stats`, { name: 'stats', params: { days }, hitSource: ['contacts.write', 'imports.write', 'campaigns.write'] }),
 
-  billing: (id: string) => alova.Get<Envelope<Billing>>(`/workspaces/${id}/billing`, { name: 'billing', hitSource: ['billing.write', 'contacts.write', 'imports.write', 'campaigns.write'] }),
+  billing: (id: string) => alova.Get<Envelope<Billing>>(`/workspaces/${id}/billing`, { name: 'billing', hitSource: ['billing.write', 'contacts.write', 'imports.write', 'campaigns.write', 'team.write'] }),
 
   campaigns: (id: string, params: { status?: string; limit?: number; page?: number } = {}) =>
     alova.Get<Paginated<Campaign>>(`/workspaces/${id}/campaigns`, { name: 'campaigns.list', params, hitSource: 'campaigns.write' }),
@@ -216,6 +219,38 @@ export const reports = {
 /**
  * Plans and the workspace's subscription, paid through Flutterwave checkout.
  */
+export const team = {
+  members: (workspace: string, params: { page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<Member>>(`/workspaces/${workspace}/members`, { name: 'team.members', params, hitSource: ['team.write', 'workspaces.write'] }),
+
+  updateRole: (workspace: string, member: string, role: Exclude<WorkspaceRole, 'owner'>) =>
+    alova.Patch<Envelope<Member>>(`/workspaces/${workspace}/members/${member}`, { role }, { name: 'team.write' }),
+
+  remove: (workspace: string, member: string) => alova.Delete<Envelope<Member>>(`/workspaces/${workspace}/members/${member}`, undefined, { name: 'team.write' }),
+
+  invitations: (workspace: string, params: { page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<Invitation>>(`/workspaces/${workspace}/invitations`, { name: 'team.invitations', params, hitSource: 'team.write' }),
+
+  invite: (workspace: string, data: { email: string; role: Invitation['role'] }) =>
+    alova.Post<Envelope<Invitation>>(`/workspaces/${workspace}/invitations`, data, { name: 'team.write' }),
+
+  resend: (workspace: string, id: string) =>
+    alova.Post<Envelope<Invitation>>(`/workspaces/${workspace}/invitations/${id}/resend`, undefined, { name: 'team.write' }),
+
+  revoke: (workspace: string, id: string) => alova.Delete(`/workspaces/${workspace}/invitations/${id}`, undefined, { name: 'team.write' }),
+};
+
+/**
+ * The invitee's side of an invite, addressed by the token in the emailed link.
+ */
+export const invites = {
+  show: (token: string) => alova.Get<Envelope<Invitation>>(`/invites/${token}`, { cacheFor: 0 }),
+
+  accept: (token: string) => alova.Post<Envelope<Workspace>>(`/invites/${token}/accept`, undefined, { name: 'workspaces.write' }),
+
+  decline: (token: string) => alova.Post<Envelope<Invitation>>(`/invites/${token}/decline`),
+};
+
 export const billing = {
   plans: () => alova.Get<Paginated<Plan>>('/plans', { name: 'billing.plans', cacheFor: 10 * 60 * 1000 }),
 

@@ -34,6 +34,7 @@ class PlanRequest extends FormRequest
             'contacts_limit' => ['nullable', 'integer', 'min:0'],
             'emails_limit' => ['nullable', 'integer', 'min:0'],
             'sms_limit' => ['nullable', 'integer', 'min:0'],
+            'seats_limit' => ['nullable', 'integer', 'min:1'],
             'is_active' => ['sometimes', 'boolean'],
             'is_default' => ['sometimes', 'boolean'],
             'sort' => ['sometimes', 'integer', 'between:0,1000'],
