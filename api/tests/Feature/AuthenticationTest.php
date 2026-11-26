@@ -86,7 +86,14 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(202);
     }
 
-    public function testUserCanRequestPasswordResetCode(): void
+    public function testJsonClientCanLogoutWithoutXhrHeader(): void
+    {
+        Sanctum::actingAs(User::factory()->create(), ['*']);
+
+        $this->postJson('/api/account/logout')->assertStatus(202);
+    }
+
+        public function testUserCanRequestPasswordResetCode(): void
     {
         \Artisan::call('db:seed ConfigurationSeeder');
         $user = User::factory()->create();

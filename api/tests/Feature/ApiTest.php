@@ -27,7 +27,7 @@ class ApiTest extends TestCase
      */
     public function testRequestsCanBeRateLimited(): void
     {
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 310; $i++) {
             $response = $this->get('/api/');
         }
         $response->assertTooManyRequests();

@@ -2,7 +2,7 @@ import type { User } from '@/api';
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { auth } from '@/api';
+import { auth, forgetAll } from '@/api';
 
 /**
  * The signed-in user and their API token.
@@ -46,10 +46,12 @@ export const useSession = defineStore('session', () => {
 
   /**
    * Forget the session locally, e.g. when the API says the token is no longer valid.
+   * Cached responses belong to this user, so they go too.
    */
   function expire() {
     token.value = null;
     user.value = null;
+    forgetAll();
   }
 
   return { token, user, signedIn, name, isStaff, login, register, load, logout, expire };

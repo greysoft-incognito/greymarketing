@@ -105,7 +105,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->user()->currentAccessToken()->delete();
 
-        if (! $request->isXmlHttpRequest()) {
+        if (! $request->isXmlHttpRequest() && ! $request->expectsJson()) {
             session()->flush();
 
             return response()->redirectToRoute('web.login');

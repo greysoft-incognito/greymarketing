@@ -106,13 +106,99 @@ export interface Campaign {
   created_at: string;
 }
 
+export interface ProviderField {
+  key: string;
+  label: string;
+  required: boolean;
+  secret: boolean;
+}
+
+export interface Provider {
+  key: string;
+  name: string;
+  channels: Channel[];
+  credentials: ProviderField[];
+  settings: ProviderField[];
+}
+
+export type ConnectionStatus = 'untested' | 'active' | 'failed';
+
 export interface ProviderConnection {
   id: string;
   name: string;
   provider: string;
   channel: Channel;
+  credentials: Record<string, string | null>;
+  settings: Record<string, string | number | null>;
   is_default: boolean;
-  status: string;
+  status: ConnectionStatus;
   last_error: string | null;
   last_tested_at: string | null;
+  status_url?: string;
+  inbound_url?: string;
+  created_at: string;
+}
+
+export interface ConnectionInput {
+  name?: string;
+  provider?: string;
+  channel?: Channel;
+  is_default?: boolean;
+  credentials?: Record<string, string>;
+  settings?: Record<string, string>;
+}
+
+export interface ContactList {
+  id: string;
+  name: string;
+  description: string | null;
+  contacts_count?: number;
+  created_at: string;
+}
+
+export interface Contact {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  fields: Record<string, string | null>;
+  email_subscribed: boolean;
+  sms_subscribed: boolean;
+  email_unsubscribed_at: string | null;
+  sms_unsubscribed_at: string | null;
+  lists?: ContactList[];
+  created_at: string;
+}
+
+export interface ContactInput {
+  email?: string | null;
+  phone?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  fields?: Record<string, string>;
+  email_subscribed?: boolean;
+  sms_subscribed?: boolean;
+  lists?: string[];
+}
+
+export type ImportStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface ContactImport {
+  id: string;
+  status: ImportStatus;
+  mapping: Record<string, string | null>;
+  list?: ContactList | null;
+  processed: number;
+  imported: number;
+  skipped: number;
+  failures: Array<{ line: number; reason: string }>;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface ImportUpload extends Envelope<ContactImport> {
+  headers: string[];
+  sample: Array<Record<string, string>>;
+  fields: string[];
 }

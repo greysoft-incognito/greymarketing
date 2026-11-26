@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { invalidateCache } from 'alova';
 import { useRequest } from 'alova/client';
 import { Check, ChevronRight, Plus, Upload } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -6,6 +7,7 @@ import { workspaces } from '@/api';
 import CampaignStatusBadge from '@/components/app/CampaignStatusBadge.vue';
 import ChannelLabel from '@/components/app/ChannelLabel.vue';
 import PageHeader from '@/components/app/PageHeader.vue';
+import RefreshButton from '@/components/app/RefreshButton.vue';
 import StatCard from '@/components/app/StatCard.vue';
 import VolumeChart from '@/components/app/VolumeChart.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,9 +24,22 @@ const session = useSession();
 const workspace = useWorkspace();
 const id = workspace.current!.id;
 
-const stats = useRequest(() => workspaces.stats(id));
-const campaigns = useRequest(() => workspaces.campaigns(id, { limit: 5 }));
-const connections = useRequest(() => workspaces.connections(id));
+const statsMethod = () => workspaces.stats(id);
+
+const { data: stats, error: statsError, send: sendStats } = useRequest(statsMethod);
+const campaignsMethod = () => workspaces.campaigns(id, { limit: 5 });
+const connectionsMethod = () => workspaces.connections(id);
+
+const { data: campaigns, send: sendCampaigns } = useRequest(campaignsMethod);
+const { data: connections, send: sendConnections } = useRequest(connectionsMethod);
+
+/**
+ * Fetch the figures again, skipping anything cached.
+ */
+async function refresh() {
+  await invalidateCache([statsMethod(), campaignsMethod(), connectionsMethod()]);
+  await Promise.all([sendStats(), sendCampaigns(), sendConnections()]);
+}
 
 const greeting = computed(() => {
   const hour = new Date().getHours();
@@ -34,7 +49,7 @@ const greeting = computed(() => {
 });
 
 const kpis = computed(() => {
-  const data = stats.data.value?.data;
+  const data = stats.value?.data;
 
   if (!data) {
     return [];
@@ -76,9 +91,9 @@ const kpis = computed(() => {
 });
 
 const setup = computed(() => {
-  const list = connections.data.value?.data ?? [];
-  const contacts = stats.data.value?.data.contacts.total ?? 0;
-  const launched = (campaigns.data.value?.data ?? []).some(campaign => campaign.status !== 'draft');
+  const list = connections.value?.data ?? [];
+  const contacts = stats.value?.data.contacts.total ?? 0;
+  const launched = (campaigns.value?.data ?? []).some(campaign => campaign.status !== 'draft');
 
   return [
     { label: 'Connect an SMS provider', done: list.some(item => item.channel === 'sms'), to: 'providers' },
@@ -89,12 +104,13 @@ const setup = computed(() => {
 });
 
 const setupDone = computed(() => setup.value.filter(step => step.done).length);
-const loaded = computed(() => !!stats.data.value && !!connections.data.value && !!campaigns.data.value);
+const loaded = computed(() => !!stats.value && !!connections.value && !!campaigns.value);
 </script>
 
 <template>
   <PageHeader :title="greeting" description="Here is how your messages are doing this month.">
     <template #actions>
+      <RefreshButton :refresh="refresh" />
       <Button variant="secondary" as-child>
         <RouterLink :to="{ name: 'contacts.import' }">
           <Upload />
@@ -110,15 +126,18 @@ const loaded = computed(() => !!stats.data.value && !!connections.data.value && 
     </template>
   </PageHeader>
 
-  <Alert v-if="stats.error.value" variant="destructive">
-    <AlertDescription>We couldn't load your figures. {{ stats.error.value.message }}</AlertDescription>
+  <Alert v-if="statsError" variant="destructive" class="flex items-center justify-between gap-3">
+    <AlertDescription>We couldn't load your figures. {{ statsError.message }}</AlertDescription>
+    <Button variant="secondary" size="sm" class="shrink-0" @click="refresh">
+      Try again
+    </Button>
   </Alert>
 
   <div class="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
     <template v-if="kpis.length">
       <StatCard v-for="kpi in kpis" :key="kpi.label" v-bind="kpi" />
     </template>
-    <Skeleton v-for="n in (kpis.length ? 0 : 4)" v-else :key="n" class="h-[110px] rounded-xl" />
+    <Skeleton v-for="n in (kpis.length || statsError ? 0 : 4)" v-else :key="n" class="h-[110px] rounded-xl" />
   </div>
 
   <div class="grid items-start gap-5" :class="setupDone < setup.length || !loaded ? 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]' : ''">
@@ -132,7 +151,7 @@ const loaded = computed(() => !!stats.data.value && !!connections.data.value && 
         </CardAction>
       </CardHeader>
       <CardContent>
-        <VolumeChart v-if="stats.data.value" :days="stats.data.value.data.daily" />
+        <VolumeChart v-if="stats" :days="stats.data.daily" />
         <Skeleton v-else class="aspect-[72/22] w-full" />
       </CardContent>
     </Card>
@@ -186,7 +205,7 @@ const loaded = computed(() => !!stats.data.value && !!connections.data.value && 
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="campaign in campaigns.data.value?.data ?? []" :key="campaign.id">
+          <TableRow v-for="campaign in campaigns?.data ?? []" :key="campaign.id">
             <TableCell class="font-medium">
               {{ campaign.name }}
             </TableCell>
@@ -199,7 +218,7 @@ const loaded = computed(() => !!stats.data.value && !!connections.data.value && 
               {{ formatDateTime(campaign.started_at ?? campaign.scheduled_at) || 'Not scheduled' }}
             </TableCell>
           </TableRow>
-          <TableEmpty v-if="campaigns.data.value && !campaigns.data.value.data.length" :colspan="5">
+          <TableEmpty v-if="campaigns && !campaigns.data.length" :colspan="5">
             No campaigns yet.
             <RouterLink :to="{ name: 'campaigns.new' }" class="font-medium text-foreground">
               Create your first one
