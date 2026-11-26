@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WorkspaceCollection;
 use App\Http\Resources\WorkspaceResource;
 use App\Models\Workspace;
+use App\Services\Audience\ContactNormalizer;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class WorkspaceController extends Controller
 {
@@ -51,18 +53,20 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    public function update(Request $request, Workspace $workspace)
+    public function update(Request $request, Workspace $workspace, ContactNormalizer $normalizer)
     {
         $this->authorize('manage', $workspace);
 
+        $request->merge(array_filter([
+            'default_country' => is_string($request->input('default_country')) ? strtoupper($request->input('default_country')) : null,
+        ]));
+
         $valid = $this->validate($request, [
             'name' => ['sometimes', 'string', 'max:100'],
-            'default_country' => ['sometimes', 'string', 'size:2', 'alpha'],
+            'default_country' => ['sometimes', 'string', Rule::in($normalizer->countryCodes())],
+        ], [
+            'default_country.in' => 'We can\'t read phone numbers for that country.',
         ]);
-
-        if (isset($valid['default_country'])) {
-            $valid['default_country'] = strtoupper($valid['default_country']);
-        }
 
         $workspace->update($valid);
 

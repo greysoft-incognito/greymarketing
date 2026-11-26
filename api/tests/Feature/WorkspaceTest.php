@@ -130,4 +130,24 @@ class WorkspaceTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.plan.name', Plan::fallback()?->name);
     }
+
+    public function testDefaultCountryMustBeOneWeCanReadNumbersFor(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->patchJson("/api/workspaces/{$workspace->ulid}", ['default_country' => 'ZZ'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('default_country');
+    }
+
+    public function testCountriesListCallingCodes(): void
+    {
+        $response = $this->getJson('/api/countries')->assertOk();
+
+        $nigeria = collect($response->json('data'))->firstWhere('code', 'NG');
+
+        $this->assertSame('+234', $nigeria['dial_code']);
+    }
 }
