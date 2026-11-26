@@ -55,9 +55,9 @@ class ContactImporter
         })->all();
     }
 
-    public function reader(ContactImport $import): CsvReader
+    public function reader(ContactImport $import): ContactFileReader
     {
-        return new CsvReader(Storage::path($import->file_path));
+        return ContactFileReader::for(Storage::path($import->file_path));
     }
 
     /**

@@ -30,14 +30,14 @@ class ContactImportController extends Controller
     }
 
     /**
-     * Upload a CSV and get its headers, sample rows and a suggested mapping.
+     * Upload a CSV or vCard file and get its headers, sample rows and a suggested mapping.
      */
     public function store(Request $request, Workspace $workspace, ContactImporter $importer)
     {
         $this->authorize('contribute', $workspace);
 
         $this->validate($request, [
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:20480'],
+            'file' => ['required', 'file', 'extensions:csv,txt,vcf', 'mimes:csv,txt,vcf,vcard', 'max:20480'],
         ]);
 
         $path = $request->file('file')->store("imports/{$workspace->ulid}");

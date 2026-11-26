@@ -95,8 +95,8 @@ async function choose(file: File | undefined) {
     return;
   }
 
-  if (!/\.(csv|txt)$/i.test(file.name)) {
-    toast.error('Choose a .csv file.');
+  if (!/\.(csv|txt|vcf)$/i.test(file.name)) {
+    toast.error('Choose a .csv or .vcf file.');
 
     return;
   }
@@ -246,7 +246,7 @@ const statusBadge = (status: ContactImport['status']) => ({
 </script>
 
 <template>
-  <PageHeader title="Import contacts" description="Upload a CSV, tell us what each column is, and we add or update your contacts." />
+  <PageHeader title="Import contacts" description="Upload a CSV or vCard file, tell us what each column is, and we add or update your contacts." />
 
   <ImportSteps :steps="['Upload file', 'Map columns', 'Import']" :current="step === 3 && !running ? 4 : step" />
 
@@ -266,12 +266,12 @@ const statusBadge = (status: ContactImport['status']) => ({
           <Loader2 v-if="busy === 'uploading'" class="size-5 animate-spin" />
           <Upload v-else class="size-5" />
         </span>
-        <span class="font-semibold">{{ busy === 'uploading' ? `Reading ${fileName}…` : 'Drop a CSV file here' }}</span>
+        <span class="font-semibold">{{ busy === 'uploading' ? `Reading ${fileName}…` : 'Drop a CSV or vCard file here' }}</span>
         <span class="text-sm text-muted-foreground">or <u>browse your computer</u> · up to 20 MB</span>
-        <input ref="fileInput" type="file" accept=".csv,text/csv" class="sr-only" :disabled="!!busy" @change="choose(($event.target as HTMLInputElement).files?.[0])">
+        <input ref="fileInput" type="file" accept=".csv,.vcf,text/csv,text/vcard,text/x-vcard" class="sr-only" :disabled="!!busy" @change="choose(($event.target as HTMLInputElement).files?.[0])">
       </label>
       <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>The first row must be column names. We recognise email, phone, first and last name; anything else can be a custom field.</span>
+        <span>A CSV's first row must be column names. vCards exported from a phone or Google Contacts work as they are. We recognise email, phone, first and last name; anything else can be a custom field.</span>
         <Button variant="ghost" size="sm" @click="sampleCsv">
           <Download />
           Sample CSV
@@ -294,20 +294,23 @@ const statusBadge = (status: ContactImport['status']) => ({
         <TableHeader>
           <TableRow>
             <TableHead>Column in your file</TableHead>
-            <TableHead>Sample value</TableHead>
+            <TableHead class="hidden sm:table-cell">
+              Sample value
+            </TableHead>
             <TableHead>Save as</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow v-for="header in upload.headers" :key="header">
-            <TableCell class="font-medium">
+            <TableCell class="max-w-[160px] font-medium sm:max-w-none">
               {{ header || '(no name)' }}
+              <span class="block truncate font-mono text-xs font-normal text-muted-foreground sm:hidden">{{ sampleFor(header) || '–' }}</span>
             </TableCell>
-            <TableCell class="max-w-[220px] truncate font-mono text-[13px] text-muted-foreground">
+            <TableCell class="hidden max-w-[220px] truncate sm:table-cell font-mono text-[13px] text-muted-foreground">
               {{ sampleFor(header) || '–' }}
             </TableCell>
             <TableCell>
-              <NativeSelect v-model="mapping[header]" class="w-[240px]" :aria-label="`Save ${header} as`">
+              <NativeSelect v-model="mapping[header]" class="w-[180px] sm:w-[240px]" :aria-label="`Save ${header} as`">
                 <option v-for="option in options" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
@@ -392,14 +395,14 @@ const statusBadge = (status: ContactImport['status']) => ({
     <Card v-if="current.failures.length">
       <CardHeader>
         <CardTitle>Skipped rows</CardTitle>
-        <CardDescription>Fix these in your file and import it again. Rows already saved are updated, not duplicated.</CardDescription>
+        <CardDescription>Rows are lines in a CSV, or contacts in order in a vCard. Fix these in your file and import it again. Rows already saved are updated, not duplicated.</CardDescription>
       </CardHeader>
       <CardContent class="px-2 pt-2">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead class="w-24">
-                Line
+                Row
               </TableHead>
               <TableHead>Reason</TableHead>
             </TableRow>
