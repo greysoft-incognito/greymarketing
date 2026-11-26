@@ -30,7 +30,7 @@ export const alova = createAlova({
   baseURL: `${process.env.API_URL}/api`,
   statesHook: VueHook,
   requestAdapter: adapterFetch(),
-  cacheFor: null,
+  cacheFor: { GET: 2 * 60 * 1000 },
   timeout: 30000,
 
   beforeRequest(method) {

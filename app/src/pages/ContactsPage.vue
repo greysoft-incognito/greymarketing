@@ -4,10 +4,11 @@ import { invalidateCache } from 'alova';
 import { usePagination, useRequest } from 'alova/client';
 import { ListPlus, ListX, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
-import { contacts, lists } from '@/api';
+import { contacts, forget, lists } from '@/api';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
 import PageHeader from '@/components/app/PageHeader.vue';
 import PaginationFooter from '@/components/app/PaginationFooter.vue';
+import RefreshButton from '@/components/app/RefreshButton.vue';
 import ContactDialog from '@/components/contacts/ContactDialog.vue';
 import ListDialog from '@/components/contacts/ListDialog.vue';
 import SubscriptionBadge from '@/components/contacts/SubscriptionBadge.vue';
@@ -60,8 +61,6 @@ const {
     watchingStates: [search, listId, subscribed],
     debounce: [300, 0, 0, 0, 0],
     initialPageSize: 30,
-    preloadNextPage: false,
-    preloadPreviousPage: false,
     total: response => response.meta.total,
     data: response => response.data,
   },
@@ -103,8 +102,11 @@ async function reloadLists() {
   await sendLists();
 }
 
+/**
+ * Fetch everything on the page again, including other pages of the table.
+ */
 async function refresh() {
-  await invalidateCache(totalMethod());
+  await Promise.all([forget('contacts.list'), invalidateCache(totalMethod())]);
   await Promise.all([refreshRows(), sendTotal(), reloadLists()]);
 }
 
@@ -204,6 +206,7 @@ async function removeSelectedFromList() {
     :description="totalData ? `${formatNumber(total)} ${total === 1 ? 'person' : 'people'} across ${allLists.length} ${allLists.length === 1 ? 'list' : 'lists'}. Lists can overlap.` : undefined"
   >
     <template #actions>
+      <RefreshButton :refresh="refresh" />
       <Button variant="secondary" @click="openList()">
         <ListPlus />
         New list

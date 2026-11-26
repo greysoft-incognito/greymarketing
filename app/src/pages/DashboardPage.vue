@@ -7,6 +7,7 @@ import { workspaces } from '@/api';
 import CampaignStatusBadge from '@/components/app/CampaignStatusBadge.vue';
 import ChannelLabel from '@/components/app/ChannelLabel.vue';
 import PageHeader from '@/components/app/PageHeader.vue';
+import RefreshButton from '@/components/app/RefreshButton.vue';
 import StatCard from '@/components/app/StatCard.vue';
 import VolumeChart from '@/components/app/VolumeChart.vue';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,12 +27,18 @@ const id = workspace.current!.id;
 const statsMethod = () => workspaces.stats(id);
 
 const { data: stats, error: statsError, send: sendStats } = useRequest(statsMethod);
-const { data: campaigns } = useRequest(() => workspaces.campaigns(id, { limit: 5 }));
-const { data: connections } = useRequest(() => workspaces.connections(id));
+const campaignsMethod = () => workspaces.campaigns(id, { limit: 5 });
+const connectionsMethod = () => workspaces.connections(id);
 
-async function reloadStats() {
-  await invalidateCache(statsMethod());
-  await sendStats();
+const { data: campaigns, send: sendCampaigns } = useRequest(campaignsMethod);
+const { data: connections, send: sendConnections } = useRequest(connectionsMethod);
+
+/**
+ * Fetch the figures again, skipping anything cached.
+ */
+async function refresh() {
+  await invalidateCache([statsMethod(), campaignsMethod(), connectionsMethod()]);
+  await Promise.all([sendStats(), sendCampaigns(), sendConnections()]);
 }
 
 const greeting = computed(() => {
@@ -103,6 +110,7 @@ const loaded = computed(() => !!stats.value && !!connections.value && !!campaign
 <template>
   <PageHeader :title="greeting" description="Here is how your messages are doing this month.">
     <template #actions>
+      <RefreshButton :refresh="refresh" />
       <Button variant="secondary" as-child>
         <RouterLink :to="{ name: 'contacts.import' }">
           <Upload />
@@ -120,7 +128,7 @@ const loaded = computed(() => !!stats.value && !!connections.value && !!campaign
 
   <Alert v-if="statsError" variant="destructive" class="flex items-center justify-between gap-3">
     <AlertDescription>We couldn't load your figures. {{ statsError.message }}</AlertDescription>
-    <Button variant="secondary" size="sm" class="shrink-0" @click="reloadStats">
+    <Button variant="secondary" size="sm" class="shrink-0" @click="refresh">
       Try again
     </Button>
   </Alert>

@@ -7,6 +7,7 @@ import { computed, ref } from 'vue';
 import { connections, providers, workspaces } from '@/api';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
 import PageHeader from '@/components/app/PageHeader.vue';
+import RefreshButton from '@/components/app/RefreshButton.vue';
 import ConnectProviderDialog from '@/components/providers/ConnectProviderDialog.vue';
 import ProviderCard from '@/components/providers/ProviderCard.vue';
 import SendTestDialog from '@/components/providers/SendTestDialog.vue';
@@ -114,8 +115,9 @@ async function remove() {
     title="Providers"
     description="Connect the SMS and email accounts you already use. Messages go out through your own keys and your provider bills you directly."
   >
-    <template v-if="workspace.canManage" #actions>
-      <Button :disabled="!catalog" @click="connect()">
+    <template #actions>
+      <RefreshButton :refresh="reload" />
+      <Button v-if="workspace.canManage" :disabled="!catalog" @click="connect()">
         <Plus />
         Connect provider
       </Button>

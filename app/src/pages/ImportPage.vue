@@ -4,16 +4,17 @@ import { usePagination, useRequest } from 'alova/client';
 import { CircleCheck, Download, FileSpreadsheet, Loader2, TriangleAlert, Upload } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { imports, lists } from '@/api';
+import { forget, imports, lists } from '@/api';
 import FormField from '@/components/app/FormField.vue';
 import PageHeader from '@/components/app/PageHeader.vue';
 import PaginationFooter from '@/components/app/PaginationFooter.vue';
+import RefreshButton from '@/components/app/RefreshButton.vue';
 import StatCard from '@/components/app/StatCard.vue';
 import ImportSteps from '@/components/contacts/ImportSteps.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Progress } from '@/components/ui/progress';
@@ -53,8 +54,6 @@ const {
   refresh: refreshHistory,
 } = usePagination((pageNumber, perPage) => imports.list(id, pageNumber, perPage), {
   initialPageSize: 10,
-  preloadNextPage: false,
-  preloadPreviousPage: false,
   total: response => response.meta.total,
   data: response => response.data,
 });
@@ -140,6 +139,7 @@ async function start() {
     });
 
     current.value = result.data;
+    watching = true;
     router.replace({ query: { import: result.data.id } });
     poll();
   } catch (e) {
@@ -150,6 +150,7 @@ async function start() {
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined;
+let watching = false;
 
 /**
  * Check on a running import until it finishes.
@@ -158,11 +159,15 @@ function poll() {
   clearTimeout(timer);
 
   if (!current.value || !['pending', 'processing'].includes(current.value.status)) {
-    refreshHistory();
+    if (watching) {
+      watching = false;
+      finished();
+    }
 
     return;
   }
 
+  watching = true;
   timer = setTimeout(async () => {
     try {
       current.value = (await imports.show(id, current.value!.id)).data;
@@ -175,6 +180,14 @@ function poll() {
 }
 
 onBeforeUnmount(() => clearTimeout(timer));
+
+/**
+ * The import adds contacts after the start request returns, so anything cached before it finished is stale.
+ */
+async function finished() {
+  await forget('contacts.list', 'lists.list', 'imports.list', 'stats', 'billing');
+  await Promise.all([refreshHistory(), workspace.loadBilling()]);
+}
 
 async function open(importId: string) {
   try {
@@ -429,6 +442,9 @@ const statusBadge = (status: ContactImport['status']) => ({
   <Card v-if="step === 1">
     <CardHeader>
       <CardTitle>Recent imports</CardTitle>
+      <CardAction>
+        <RefreshButton :refresh="refreshHistory" />
+      </CardAction>
     </CardHeader>
     <CardContent class="px-2 pt-2">
       <Table>
