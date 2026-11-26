@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
 use Laravel\Sanctum\Sanctum;
@@ -83,5 +84,70 @@ class WorkspaceTest extends TestCase
         $this->patchJson("/api/workspaces/{$workspace->ulid}", ['default_country' => 'ke'])
             ->assertAccepted()
             ->assertJsonPath('data.default_country', 'KE');
+    }
+
+    public function testMembersCanLeaveAWorkspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+        $member = User::factory()->create();
+        $workspace->members()->attach($member, ['role' => 'admin']);
+
+        Sanctum::actingAs($member);
+
+        $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertAccepted();
+
+        $this->assertNull($workspace->roleOf($member));
+        $this->getJson("/api/workspaces/{$workspace->ulid}")->assertForbidden();
+    }
+
+    public function testOwnerCannotLeaveTheirWorkspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertForbidden();
+    }
+
+    public function testNonMembersCannotLeaveAWorkspace(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson("/api/workspaces/{$workspace->ulid}/leave")->assertForbidden();
+    }
+
+    public function testWorkspaceListShowsThePlanInUse(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->assertNotNull(Plan::fallback());
+
+        $this->getJson('/api/workspaces')
+            ->assertOk()
+            ->assertJsonPath('data.0.plan.name', Plan::fallback()?->name);
+    }
+
+    public function testDefaultCountryMustBeOneWeCanReadNumbersFor(): void
+    {
+        $workspace = Workspace::factory()->create();
+
+        Sanctum::actingAs($workspace->owner);
+
+        $this->patchJson("/api/workspaces/{$workspace->ulid}", ['default_country' => 'ZZ'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('default_country');
+    }
+
+    public function testCountriesListCallingCodes(): void
+    {
+        $response = $this->getJson('/api/countries')->assertOk();
+
+        $nigeria = collect($response->json('data'))->firstWhere('code', 'NG');
+
+        $this->assertSame('+234', $nigeria['dial_code']);
     }
 }

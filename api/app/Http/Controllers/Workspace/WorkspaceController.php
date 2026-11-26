@@ -7,13 +7,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\WorkspaceCollection;
 use App\Http\Resources\WorkspaceResource;
 use App\Models\Workspace;
+use App\Services\Audience\ContactNormalizer;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class WorkspaceController extends Controller
 {
     public function index(Request $request)
     {
-        $workspaces = $request->user()->workspaces()->latest('workspaces.id')->paginate($request->input('limit', 30));
+        $workspaces = $request->user()->workspaces()
+            ->with('currentSubscription.plan')
+            ->latest('workspaces.id')
+            ->paginate($request->input('limit', 30));
 
         return (new WorkspaceCollection($workspaces))->additional([
             'message' => HttpStatus::message(HttpStatus::OK),
@@ -48,18 +53,20 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    public function update(Request $request, Workspace $workspace)
+    public function update(Request $request, Workspace $workspace, ContactNormalizer $normalizer)
     {
         $this->authorize('manage', $workspace);
 
+        $request->merge(array_filter([
+            'default_country' => is_string($request->input('default_country')) ? strtoupper($request->input('default_country')) : null,
+        ]));
+
         $valid = $this->validate($request, [
             'name' => ['sometimes', 'string', 'max:100'],
-            'default_country' => ['sometimes', 'string', 'size:2', 'alpha'],
+            'default_country' => ['sometimes', 'string', Rule::in($normalizer->countryCodes())],
+        ], [
+            'default_country.in' => 'We can\'t read phone numbers for that country.',
         ]);
-
-        if (isset($valid['default_country'])) {
-            $valid['default_country'] = strtoupper($valid['default_country']);
-        }
 
         $workspace->update($valid);
 
@@ -84,6 +91,22 @@ class WorkspaceController extends Controller
 
         return (new WorkspaceResource($workspace))->additional([
             'message' => 'Workspace deleted.',
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
+    }
+
+    /**
+     * Remove the signed-in member from the workspace.
+     */
+    public function leave(Request $request, Workspace $workspace)
+    {
+        $this->authorize('leave', $workspace);
+
+        $workspace->members()->detach($request->user());
+
+        return (new WorkspaceResource($workspace))->additional([
+            'message' => 'You left ' . $workspace->name . '.',
             'status' => 'success',
             'status_code' => HttpStatus::ACCEPTED,
         ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Audience\CountryController;
 use App\Http\Controllers\Billing\PlanController;
 use App\Http\Controllers\Workspace\BillingController;
 use App\Http\Controllers\Workspace\CampaignController;
@@ -14,11 +15,13 @@ use App\Http\Controllers\Workspace\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('plans', PlanController::class)->name('plans.index');
+Route::get('countries', CountryController::class)->name('countries.index');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('providers', [ProviderConnectionController::class, 'catalog'])->name('providers.catalog');
 
     Route::apiResource('workspaces', WorkspaceController::class);
+    Route::post('workspaces/{workspace}/leave', [WorkspaceController::class, 'leave'])->name('workspaces.leave');
 
     Route::scopeBindings()->prefix('workspaces/{workspace}')->name('workspaces.')->group(function () {
         Route::get('stats', StatsController::class)->name('stats');

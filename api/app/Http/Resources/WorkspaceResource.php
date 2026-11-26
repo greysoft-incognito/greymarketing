@@ -26,6 +26,10 @@ class WorkspaceResource extends JsonResource
             'subscription' => $this->whenLoaded('currentSubscription', fn () => $this->currentSubscription
                 ? new SubscriptionResource($this->currentSubscription)
                 : null),
+            'plan' => $this->when($this->resource->relationLoaded('currentSubscription'), fn () => ($plan = $this->plan()) ? [
+                'id' => $plan->slug,
+                'name' => $plan->name,
+            ] : null),
             'contacts_count' => $this->whenCounted('contacts'),
             'campaigns_count' => $this->whenCounted('campaigns'),
             'usage_this_month' => $this->when($this->hasAttribute('emails_this_month'), fn () => [

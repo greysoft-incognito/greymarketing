@@ -43,4 +43,29 @@ class ContactNormalizer
 
         return $this->phones->format($number, PhoneNumberFormat::E164);
     }
+
+    /**
+     * Countries whose local phone numbers can be read, with their calling codes.
+     *
+     * @return array<int, array{code: string, dial_code: string}>
+     */
+    public function countries(): array
+    {
+        $regions = $this->phones->getSupportedRegions();
+
+        sort($regions);
+
+        return array_map(fn (string $region) => [
+            'code' => $region,
+            'dial_code' => '+' . $this->phones->getCountryCodeForRegion($region),
+        ], $regions);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function countryCodes(): array
+    {
+        return $this->phones->getSupportedRegions();
+    }
 }

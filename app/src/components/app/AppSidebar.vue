@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { BarChart3, Check, ChevronsUpDown, CreditCard, FileText, LayoutDashboard, Plug, Send, Settings2, ShieldCheck, Users } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { BarChart3, Check, ChevronsUpDown, CreditCard, FileText, LayoutDashboard, Plug, Plus, Send, Settings2, ShieldCheck, Users } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
+import NewWorkspaceDialog from '@/components/workspace/NewWorkspaceDialog.vue';
 import { formatNumber } from '@/lib/format';
 import { useSession } from '@/stores/session';
 import { useWorkspace } from '@/stores/workspace';
@@ -21,6 +22,9 @@ const emit = defineEmits<{ navigate: [] }>();
 const route = useRoute();
 const session = useSession();
 const workspace = useWorkspace();
+const creating = ref(false);
+
+const roles: Record<string, string> = { owner: 'Owner', admin: 'Admin', member: 'Member' };
 
 const workspaceNav: NavItem[] = [
   { to: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -86,11 +90,23 @@ function isActive(name: string) {
       <DropdownMenuContent align="start" class="w-(--reka-dropdown-menu-trigger-width)">
         <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
         <DropdownMenuItem v-for="item in workspace.list" :key="item.id" @select="workspace.select(item.id)">
-          <span class="flex-1 truncate">{{ item.name }}</span>
+          <span class="grid min-w-0 flex-1">
+            <span class="truncate">{{ item.name }}</span>
+            <span class="truncate text-xs text-muted-foreground">
+              {{ [roles[item.role ?? ''], item.plan ? `${item.plan.name} plan` : null].filter(Boolean).join(' · ') }}
+            </span>
+          </span>
           <Check v-if="item.id === workspace.current?.id" class="text-brand" />
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem @select="creating = true">
+          <Plus />
+          New workspace
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <NewWorkspaceDialog v-model:open="creating" />
 
     <nav aria-label="Workspace" class="grid gap-0.5">
       <RouterLink
