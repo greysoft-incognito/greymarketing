@@ -115,8 +115,8 @@ export const lists = {
 };
 
 export const imports = {
-  list: (workspace: string, page = 1) =>
-    alova.Get<Paginated<ContactImport>>(`/workspaces/${workspace}/imports`, { params: { page, limit: 10 } }),
+  list: (workspace: string, page = 1, limit = 10) =>
+    alova.Get<Paginated<ContactImport>>(`/workspaces/${workspace}/imports`, { params: { page, limit } }),
 
   upload: (workspace: string, file: File) => {
     const form = new FormData();

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ContactImport, ImportUpload } from '@/api';
-import { useRequest } from 'alova/client';
+import { usePagination, useRequest } from 'alova/client';
 import { CircleCheck, Download, FileSpreadsheet, Loader2, TriangleAlert, Upload } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -41,14 +41,26 @@ const current = ref<ContactImport | null>(null);
 const busy = ref<'uploading' | 'starting' | null>(null);
 const dragging = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
-const historyPage = ref(1);
 
-const listQuery = useRequest(() => lists.list(id));
-const history = useRequest(() => imports.list(id, historyPage.value), { immediate: false });
+const { data: listData } = useRequest(() => lists.list(id));
+const {
+  data: history,
+  page: historyPage,
+  pageSize: historyPageSize,
+  total: historyTotal,
+  pageCount: historyPageCount,
+  loading: historyLoading,
+  refresh: refreshHistory,
+} = usePagination((pageNumber, perPage) => imports.list(id, pageNumber, perPage), {
+  initialPageSize: 10,
+  preloadNextPage: false,
+  preloadPreviousPage: false,
+  total: response => response.meta.total,
+  data: response => response.data,
+});
 
 const step = computed(() => (current.value ? 3 : upload.value ? 2 : 1));
 
-watch(historyPage, () => history.send(), { immediate: true });
 
 /**
  * A custom field name built from a column header, matching what the API accepts.
@@ -146,7 +158,7 @@ function poll() {
   clearTimeout(timer);
 
   if (!current.value || !['pending', 'processing'].includes(current.value.status)) {
-    history.send();
+    refreshHistory();
 
     return;
   }
@@ -304,7 +316,7 @@ const statusBadge = (status: ContactImport['status']) => ({
             <option :value="SKIP">
               Don't add to a list
             </option>
-            <option v-for="list in listQuery.data.value?.data ?? []" :key="list.id" :value="list.id">
+            <option v-for="list in listData?.data ?? []" :key="list.id" :value="list.id">
               {{ list.name }}
             </option>
             <option :value="NEW_LIST">
@@ -435,7 +447,7 @@ const statusBadge = (status: ContactImport['status']) => ({
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in history.data.value?.data ?? []"
+            v-for="item in history"
             :key="item.id"
             :class="item.status !== 'pending' && 'cursor-pointer'"
             @click="item.status !== 'pending' && router.replace({ query: { import: item.id } })"
@@ -458,12 +470,12 @@ const statusBadge = (status: ContactImport['status']) => ({
               {{ formatNumber(item.skipped) }}
             </TableCell>
           </TableRow>
-          <TableEmpty v-if="history.data.value && !history.data.value.data.length" :colspan="5">
+          <TableEmpty v-if="!historyLoading && !history.length" :colspan="5">
             No imports yet.
           </TableEmpty>
         </TableBody>
       </Table>
     </CardContent>
-    <PaginationFooter v-model="historyPage" :meta="history.data.value?.meta" noun="imports" />
+    <PaginationFooter v-model="historyPage" :page-size="historyPageSize" :total="historyTotal" :page-count="historyPageCount" noun="imports" />
   </Card>
 </template>

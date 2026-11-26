@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Channel, Contact, ContactList } from '@/api';
-import { useRequest, useWatcher } from 'alova/client';
+import { invalidateCache } from 'alova';
+import { usePagination, useRequest } from 'alova/client';
 import { ListPlus, ListX, MoreHorizontal, Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { contacts, lists } from '@/api';
@@ -31,34 +32,48 @@ const id = workspace.current!.id;
 const search = ref('');
 const listId = ref<string | null>(null);
 const subscribed = ref<Channel | ''>('');
-const page = ref(1);
 const selected = ref<string[]>([]);
 
-const listQuery = useRequest(() => lists.list(id));
-const totals = useRequest(() => contacts.list(id, { limit: 1 }));
-const query = useWatcher(
-  () => contacts.list(id, {
-    page: page.value,
+const listsMethod = () => lists.list(id);
+const totalMethod = () => contacts.list(id, { limit: 1 });
+
+const { data: listData, error: listError, send: sendLists } = useRequest(listsMethod);
+const { data: totalData, error: totalError, send: sendTotal } = useRequest(totalMethod);
+const {
+  data: rows,
+  page,
+  pageSize,
+  total: matching,
+  pageCount,
+  loading,
+  error: rowsError,
+  refresh: refreshRows,
+} = usePagination(
+  (pageNumber, perPage) => contacts.list(id, {
+    page: pageNumber,
+    limit: perPage,
     ...(search.value.trim() ? { search: search.value.trim() } : {}),
     ...(listId.value ? { list: listId.value } : {}),
     ...(subscribed.value ? { subscribed: subscribed.value } : {}),
   }),
-  [search, listId, subscribed, page],
-  { immediate: true, debounce: [300, 0, 0, 0] },
+  {
+    watchingStates: [search, listId, subscribed],
+    debounce: [300, 0, 0, 0, 0],
+    initialPageSize: 30,
+    preloadNextPage: false,
+    preloadPreviousPage: false,
+    total: response => response.meta.total,
+    data: response => response.data,
+  },
 );
 
-watch([search, listId, subscribed], () => {
-  page.value = 1;
-});
-
-watch(() => query.data.value, () => {
+watch(rows, () => {
   selected.value = [];
 });
 
-const allLists = computed(() => listQuery.data.value?.data ?? []);
-const rows = computed(() => query.data.value?.data ?? []);
-const total = computed(() => totals.data.value?.meta.total ?? 0);
-const loadError = computed(() => query.error.value ?? listQuery.error.value ?? totals.error.value);
+const allLists = computed(() => listData.value?.data ?? []);
+const total = computed(() => totalData.value?.meta.total ?? 0);
+const loadError = computed(() => rowsError.value ?? listError.value ?? totalError.value);
 const activeList = computed(() => allLists.value.find(list => list.id === listId.value) ?? null);
 const filtering = computed(() => !!search.value.trim() || !!subscribed.value);
 
@@ -80,8 +95,17 @@ function selectRow(contactId: string, checked: boolean | 'indeterminate') {
     : selected.value.filter(item => item !== contactId);
 }
 
+/**
+ * Fetch the lists again, skipping anything cached.
+ */
+async function reloadLists() {
+  await invalidateCache(listsMethod());
+  await sendLists();
+}
+
 async function refresh() {
-  await Promise.all([query.send(), totals.send(), listQuery.send()]);
+  await invalidateCache(totalMethod());
+  await Promise.all([refreshRows(), sendTotal(), reloadLists()]);
 }
 
 const contactOpen = ref(false);
@@ -101,7 +125,7 @@ function openList(list: ContactList | null = null) {
 }
 
 async function listSaved(list: ContactList) {
-  await listQuery.send();
+  await reloadLists();
 
   if (!editingList.value) {
     listId.value = list.id;
@@ -143,7 +167,7 @@ function removeList(list: ContactList) {
         await lists.remove(id, list.id);
         toast.success('List deleted.');
         listId.value = listId.value === list.id ? null : listId.value;
-        await listQuery.send();
+        await reloadLists();
       } catch (e) {
         notifyError(e);
       }
@@ -155,7 +179,7 @@ async function addSelectedTo(list: ContactList) {
   try {
     await lists.attach(id, list.id, selected.value);
     toast.success(`Added ${selected.value.length} to ${list.name}.`);
-    await Promise.all([query.send(), listQuery.send()]);
+    await Promise.all([refreshRows(), reloadLists()]);
   } catch (e) {
     notifyError(e);
   }
@@ -167,7 +191,7 @@ async function removeSelectedFromList() {
   try {
     await lists.detach(id, list.id, selected.value);
     toast.success(`Removed ${selected.value.length} from ${list.name}.`);
-    await Promise.all([query.send(), listQuery.send()]);
+    await Promise.all([refreshRows(), reloadLists()]);
   } catch (e) {
     notifyError(e);
   }
@@ -177,7 +201,7 @@ async function removeSelectedFromList() {
 <template>
   <PageHeader
     title="Contacts"
-    :description="totals.data.value ? `${formatNumber(total)} ${total === 1 ? 'person' : 'people'} across ${allLists.length} ${allLists.length === 1 ? 'list' : 'lists'}. Lists can overlap.` : undefined"
+    :description="totalData ? `${formatNumber(total)} ${total === 1 ? 'person' : 'people'} across ${allLists.length} ${allLists.length === 1 ? 'list' : 'lists'}. Lists can overlap.` : undefined"
   >
     <template #actions>
       <Button variant="secondary" @click="openList()">
@@ -208,11 +232,11 @@ async function removeSelectedFromList() {
         <span class="font-semibold">All contacts</span>
         <Users class="size-4 text-muted-foreground" />
       </span>
-      <span class="text-xl font-semibold tabular-nums">{{ totals.data.value ? formatNumber(total) : '–' }}</span>
+      <span class="text-xl font-semibold tabular-nums">{{ totalData ? formatNumber(total) : '–' }}</span>
       <span class="text-xs text-muted-foreground">Everyone in this workspace</span>
     </button>
 
-    <template v-if="listQuery.data.value">
+    <template v-if="listData">
       <div
         v-for="list in allLists"
         :key="list.id"
@@ -247,7 +271,7 @@ async function removeSelectedFromList() {
         </DropdownMenu>
       </div>
     </template>
-    <Skeleton v-for="n in (listQuery.data.value || listQuery.error.value ? 0 : 3)" v-else :key="n" class="h-[104px] rounded-xl" />
+    <Skeleton v-for="n in (listData || listError ? 0 : 3)" v-else :key="n" class="h-[104px] rounded-xl" />
 
   </div>
 
@@ -323,7 +347,10 @@ async function removeSelectedFromList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <template v-if="query.data.value">
+          <TableEmpty v-if="rowsError && !rows.length" :colspan="9">
+            Contacts didn't load. Use Try again above.
+          </TableEmpty>
+          <template v-else-if="rows.length || !loading">
             <TableRow v-for="contact in rows" :key="contact.id" :data-state="selected.includes(contact.id) ? 'selected' : undefined">
               <TableCell class="pl-4">
                 <Checkbox
@@ -388,9 +415,7 @@ async function removeSelectedFromList() {
               </template>
             </TableEmpty>
           </template>
-          <TableEmpty v-else-if="query.error.value" :colspan="9">
-            Contacts didn't load. Use Try again above.
-          </TableEmpty>
+          
           <TableRow v-for="n in 6" v-else :key="n">
             <TableCell :colspan="9">
               <Skeleton class="h-6 w-full" />
@@ -400,7 +425,7 @@ async function removeSelectedFromList() {
       </Table>
     </CardContent>
 
-    <PaginationFooter v-model="page" :meta="query.data.value?.meta" noun="contacts" />
+    <PaginationFooter v-model="page" :page-size="pageSize" :total="matching" :page-count="pageCount" noun="contacts" />
   </Card>
 
   <ContactDialog v-model:open="contactOpen" :contact="editingContact" :lists="allLists" :default-list="listId" @saved="refresh" />
