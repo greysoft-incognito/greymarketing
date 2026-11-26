@@ -214,7 +214,7 @@ async function removeSelectedFromList() {
       <Button variant="secondary" as-child>
         <RouterLink :to="{ name: 'contacts.import' }">
           <Upload />
-          Import CSV
+          Import contacts
         </RouterLink>
       </Button>
       <Button @click="openContact()">
@@ -412,7 +412,7 @@ async function removeSelectedFromList() {
               <template v-else>
                 No contacts yet.
                 <RouterLink :to="{ name: 'contacts.import' }" class="font-medium text-foreground">
-                  Import a CSV
+                  Import a file
                 </RouterLink>
                 or add one by hand.
               </template>
