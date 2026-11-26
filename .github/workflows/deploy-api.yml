@@ -1,0 +1,169 @@
+name: Deploy API
+
+on:
+  workflow_run:
+    workflows: ["API Tests"]
+    types: [completed]
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or commit to deploy"
+        required: false
+        default: "main"
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.API_AUTO_DEPLOY == 'true' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+
+    runs-on: ubuntu-latest
+
+    name: Deploy API over SSH
+
+    environment: production
+
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      DEPLOY_PHP: ${{ vars.DEPLOY_PHP || 'php' }}
+      DEPLOY_KEEP_RELEASES: ${{ vars.DEPLOY_KEEP_RELEASES || '5' }}
+      DEPLOY_RELOAD_COMMAND: ${{ vars.DEPLOY_RELOAD_COMMAND }}
+
+    steps:
+      - name: Check deploy secrets
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
+        run: |
+          missing=""
+
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PATH; do
+            if [ -z "${!name}" ]; then
+              missing="$missing $name"
+            fi
+          done
+
+          if [ -z "$DEPLOY_SSH_KEY" ] && [ -z "$DEPLOY_PASSWORD" ]; then
+            missing="$missing DEPLOY_SSH_KEY|DEPLOY_PASSWORD"
+          fi
+
+          if [ -n "$missing" ]; then
+            echo "::error::Missing deploy secrets:$missing"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.event.workflow_run.head_sha }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pgsql, pdo_pgsql, bcmath, intl, gd, exif, iconv, fileinfo
+          coverage: none
+
+      - name: Install production dependencies
+        working-directory: api
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+      - name: Package release
+        id: package
+        run: |
+          release="$(date -u +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+
+          tar -czf "$RUNNER_TEMP/release.tar.gz" \
+            -C api \
+            --exclude=./.env \
+            --exclude=./.env.ci \
+            --exclude=./tests \
+            --exclude=./node_modules \
+            --exclude=./coverage \
+            --exclude='./storage/logs/*' \
+            --exclude='./bootstrap/cache/*.php' \
+            .
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh ~/bin
+          chmod 700 ~/.ssh
+
+          # The key is used when set, otherwise the password.
+          if [ -n "$DEPLOY_SSH_KEY" ]; then
+            printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            auth="IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            PreferredAuthentications publickey"
+            prefix=""
+          else
+            sudo apt-get install -y -qq sshpass > /dev/null
+            printf '%s' "$DEPLOY_PASSWORD" > ~/.ssh/deploy_password
+            chmod 600 ~/.ssh/deploy_password
+            auth="PubkeyAuthentication no
+            PreferredAuthentications password,keyboard-interactive"
+            prefix="sshpass -f $HOME/.ssh/deploy_password"
+          fi
+
+          printf '#!/bin/sh\nexec %s ssh "$@"\n' "$prefix" > ~/bin/deploy-ssh
+          printf '#!/bin/sh\nexec %s scp "$@"\n' "$prefix" > ~/bin/deploy-scp
+          chmod +x ~/bin/deploy-ssh ~/bin/deploy-scp
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::DEPLOY_KNOWN_HOSTS is not set, trusting the host key returned by ssh-keyscan."
+            ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          fi
+
+          cat > ~/.ssh/config <<EOF
+          Host deploy
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            Port $DEPLOY_PORT
+            StrictHostKeyChecking yes
+            $auth
+          EOF
+
+      - name: Upload release
+        env:
+          RELEASE: ${{ steps.package.outputs.release }}
+        run: |
+          deploy-ssh deploy "mkdir -p '$DEPLOY_PATH/releases/$RELEASE' '$DEPLOY_PATH/shared'"
+          deploy-scp "$RUNNER_TEMP/release.tar.gz" "deploy:$DEPLOY_PATH/releases/$RELEASE.tar.gz"
+          deploy-ssh deploy "tar -xzf '$DEPLOY_PATH/releases/$RELEASE.tar.gz' -C '$DEPLOY_PATH/releases/$RELEASE' && rm '$DEPLOY_PATH/releases/$RELEASE.tar.gz'"
+
+      - name: Activate release
+        env:
+          RELEASE: ${{ steps.package.outputs.release }}
+        run: |
+          deploy-ssh deploy \
+            "PHP='$DEPLOY_PHP' KEEP_RELEASES='$DEPLOY_KEEP_RELEASES' RELOAD_COMMAND='$DEPLOY_RELOAD_COMMAND' \
+            bash '$DEPLOY_PATH/releases/$RELEASE/scripts/deploy.sh' '$DEPLOY_PATH' '$RELEASE'"
+
+      - name: Remove failed release
+        if: failure() && steps.package.outputs.release != ''
+        env:
+          RELEASE: ${{ steps.package.outputs.release }}
+        run: |
+          deploy-ssh deploy "current=\$(readlink -f '$DEPLOY_PATH/current' || true); \
+            if [ \"\$current\" != \"$DEPLOY_PATH/releases/$RELEASE\" ]; then rm -rf '$DEPLOY_PATH/releases/$RELEASE' '$DEPLOY_PATH/releases/$RELEASE.tar.gz'; fi" || true
+
+      - name: Clean up SSH credentials
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/deploy_password
