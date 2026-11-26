@@ -50,6 +50,7 @@ class WorkspaceStatsTest extends TestCase
 
         $this->sent('sms', ['delivered', 'delivered', 'sent', 'failed'], now()->subDay());
         $this->sent('email', ['delivered'], now());
+        $this->workspace->campaigns()->where('channel', 'email')->first()->messages()->update(['opened_at' => now()]);
         $this->sent('sms', ['delivered'], now()->subMonth());
         Contact::factory()->for($this->workspace)->create()->unsubscribe(Channel::SMS);
 
@@ -61,7 +62,13 @@ class WorkspaceStatsTest extends TestCase
         $this->assertSame(['date' => now()->subDay()->toDateString(), 'email' => 0, 'sms' => 3], $daily[5]);
         $this->assertSame(['date' => now()->toDateString(), 'email' => 1, 'sms' => 0], $daily[6]);
 
-        $response->assertJsonPath('data.this_month', ['sent' => 4, 'delivered' => 3, 'failed' => 1, 'delivery_rate' => 75])
+        $response->assertJsonPath('data.this_month', [
+                'sent' => 4,
+                'delivered' => 3,
+                'failed' => 1,
+                'delivery_rate' => 75,
+                'email_opens' => ['emails' => 1, 'opened' => 1, 'open_rate' => 100],
+            ])
             ->assertJsonPath('data.last_month.sent', 1)
             ->assertJsonPath('data.contacts.total', 7)
             ->assertJsonPath('data.contacts.added_this_month', 7)

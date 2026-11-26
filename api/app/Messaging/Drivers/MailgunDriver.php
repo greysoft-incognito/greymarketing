@@ -3,13 +3,16 @@
 namespace App\Messaging\Drivers;
 
 use App\Messaging\Contracts\ReceivesDeliveryReports;
+use App\Messaging\Contracts\ReportsOpens;
 use App\Messaging\Contracts\SendsEmail;
 use App\Messaging\Data\DeliveryReport;
 use App\Messaging\Data\EmailMessage;
+use App\Messaging\Data\OpenReport;
 use App\Messaging\Data\SendResult;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
-class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, SendsEmail
+class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, ReportsOpens, SendsEmail
 {
     protected string $label = 'Mailgun';
 
@@ -32,6 +35,7 @@ class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, S
                 'subject' => $message->subject,
                 'html' => $message->html,
                 'text' => $message->text,
+                'o:tracking-opens' => $message->trackOpens ? 'yes' : null,
                 ...collect($message->headers)->mapWithKeys(fn ($value, $name) => ["h:{$name}" => $value])->all(),
             ])
         ));
@@ -44,11 +48,7 @@ class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, S
      */
     public function parseDeliveryReport(Request $request): ?DeliveryReport
     {
-        $key = (string) $this->credential('webhook_signing_key');
-        $signature = $request->input('signature', []);
-        $expected = hash_hmac('sha256', ($signature['timestamp'] ?? '') . ($signature['token'] ?? ''), $key);
-
-        if ($key === '' || ! hash_equals($expected, (string) ($signature['signature'] ?? ''))) {
+        if (! $this->hasValidSignature($request)) {
             return null;
         }
 
@@ -68,6 +68,36 @@ class MailgunDriver extends AbstractDriver implements ReceivesDeliveryReports, S
             $event === 'delivered',
             $event === 'failed' ? ($request->input('event-data.delivery-status.message') ?: 'Delivery failed') : null,
         );
+    }
+
+    /**
+     * Opens arrive on the same webhook as delivery events, so they need the signing key too.
+     */
+    public function reportsOpens(): bool
+    {
+        return (string) $this->credential('webhook_signing_key') !== '';
+    }
+
+    public function parseOpenReport(Request $request): ?OpenReport
+    {
+        $id = $request->input('event-data.message.headers.message-id');
+
+        if (! $this->hasValidSignature($request) || $request->input('event-data.event') !== 'opened' || ! $id) {
+            return null;
+        }
+
+        $timestamp = $request->input('event-data.timestamp');
+
+        return new OpenReport($id, is_numeric($timestamp) ? Carbon::createFromTimestamp((int) $timestamp) : null);
+    }
+
+    protected function hasValidSignature(Request $request): bool
+    {
+        $key = (string) $this->credential('webhook_signing_key');
+        $signature = $request->input('signature', []);
+        $expected = hash_hmac('sha256', ($signature['timestamp'] ?? '') . ($signature['token'] ?? ''), $key);
+
+        return $key !== '' && hash_equals($expected, (string) ($signature['signature'] ?? ''));
     }
 
     protected function client()

@@ -98,6 +98,7 @@ const funnel = computed(() => {
     { label: 'Recipients', value: queued },
     { label: `Accepted by ${campaign.value?.connection?.name ?? 'provider'}`, value: counts.value.sent + counts.value.delivered },
     { label: 'Delivered', value: counts.value.delivered },
+    ...(report.value?.opened != null ? [{ label: 'Opened', value: report.value.opened }] : []),
   ].map(row => ({ ...row, width: queued ? (row.value / queued) * 100 : 0 }));
 });
 
@@ -154,17 +155,23 @@ async function cancel() {
   </Alert>
 
   <template v-if="report">
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-4">
       <StatCard label="Recipients" :value="formatNumber(report.recipients)" :note="live ? 'Sending now' : `${formatNumber(counts.skipped)} skipped`" />
       <StatCard label="Delivered" :value="formatNumber(counts.delivered)" :note="`${report.delivery_rate}% of accepted`" />
       <StatCard label="Failed" :value="formatNumber(counts.failed)" :note="`${report.failure_rate}% of attempts`" />
+      <StatCard v-if="report.opened !== null" label="Opened" :value="formatNumber(report.opened)" :note="`${report.open_rate}% of accepted`" />
       <StatCard label="Opted out" :value="formatNumber(report.opt_outs)" :note="`${percent(report.opt_outs, handedOver)} since sending`" />
     </div>
 
     <Card>
       <CardHeader>
         <CardTitle>Delivery funnel</CardTitle>
-        <CardDescription>From provider delivery receipts. Some networks don't send receipts, so those stay at Sent.</CardDescription>
+        <CardDescription>
+          From provider delivery receipts. Some networks don't send receipts, so those stay at Sent.
+          <template v-if="report.opened !== null">
+            Opens count each recipient once. Mail apps that block images aren't counted, and some privacy features open every email.
+          </template>
+        </CardDescription>
       </CardHeader>
       <CardContent class="grid gap-3">
         <div v-for="row in funnel" :key="row.label" class="grid grid-cols-[minmax(0,140px)_minmax(0,1fr)_70px] items-center gap-3 text-[13px]">
@@ -217,6 +224,9 @@ async function cancel() {
               <Badge :variant="MESSAGE_STYLES[message.status].variant">
                 {{ MESSAGE_STYLES[message.status].label }}
               </Badge>
+              <span v-if="message.opened_at" class="ml-2 text-xs text-muted-foreground" :title="`First opened ${formatDateTime(message.opened_at)}`">
+                Opened{{ message.opens_count > 1 ? ` ×${message.opens_count}` : '' }}
+              </span>
             </TableCell>
             <TableCell class="hidden max-w-[280px] truncate text-[13px] text-muted-foreground lg:table-cell" :title="message.error ?? message.provider_message_id ?? ''">
               {{ message.error ?? message.provider_message_id ?? '–' }}

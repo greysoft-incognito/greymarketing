@@ -27,6 +27,8 @@ class CampaignMessage extends Model
             'status' => MessageStatus::class,
             'sent_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'opened_at' => 'datetime',
+            'opens_count' => 'integer',
         ];
     }
 

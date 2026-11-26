@@ -92,10 +92,15 @@ const kpis = computed(() => {
     return [];
   }
 
+  const opens = value.opens
+    ? [{ label: 'Emails opened', value: formatNumber(value.opens.opened), note: value.opens.emails ? `${value.opens.open_rate}% open rate` : 'no emails sent yet' }]
+    : [];
+
   return [
     { label: 'Messages sent', value: formatNumber(attempted.value), note: `across ${formatNumber(value.campaigns)} ${value.campaigns === 1 ? 'campaign' : 'campaigns'}` },
     { label: 'Delivered', value: formatNumber(value.counts.delivered), note: attempted.value ? `${value.delivery_rate}% of accepted` : 'no sends yet' },
     { label: 'Failed', value: formatNumber(value.counts.failed), note: attempted.value ? `${value.failure_rate}% of attempts` : 'no sends yet' },
+    ...opens,
     { label: 'Opt-outs', value: formatNumber(value.opt_outs), note: 'unsubscribes and STOP replies' },
   ];
 });
@@ -111,6 +116,7 @@ const funnel = computed(() => {
     { label: 'Handed to providers', value: attempted.value },
     { label: 'Accepted', value: counts.sent + counts.delivered },
     { label: 'Delivered', value: counts.delivered },
+    ...(channel.value === 'email' && report.value?.opens ? [{ label: 'Opened', value: report.value.opens.opened }] : []),
   ].map(row => ({ ...row, width: attempted.value ? (row.value / attempted.value) * 100 : 0 }));
 });
 
@@ -136,7 +142,7 @@ const period = computed(() => periods.find(option => option.value === days.value
     </Button>
   </Alert>
 
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-4">
     <template v-if="kpis.length">
       <StatCard v-for="kpi in kpis" :key="kpi.label" v-bind="kpi" />
     </template>
@@ -222,6 +228,9 @@ const period = computed(() => periods.find(option => option.value === days.value
             <TableHead class="hidden text-right sm:table-cell">
               Failed
             </TableHead>
+            <TableHead class="hidden text-right md:table-cell">
+              Open rate
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -244,13 +253,16 @@ const period = computed(() => periods.find(option => option.value === days.value
             <TableCell class="hidden text-right tabular-nums sm:table-cell">
               {{ formatNumber(row.failed) }}
             </TableCell>
+            <TableCell class="hidden text-right tabular-nums md:table-cell">
+              {{ row.open_rate !== null && row.sent ? `${row.open_rate}%` : '–' }}
+            </TableCell>
           </TableRow>
           <TableRow v-if="!report && !summaryError">
-            <TableCell :colspan="5">
+            <TableCell :colspan="7">
               <Skeleton class="h-9" />
             </TableCell>
           </TableRow>
-          <TableEmpty v-if="report && !report.connections.length" :colspan="5">
+          <TableEmpty v-if="report && !report.connections.length" :colspan="6">
             Nothing sent in this period.
           </TableEmpty>
         </TableBody>
@@ -283,6 +295,9 @@ const period = computed(() => periods.find(option => option.value === days.value
             <TableHead class="hidden text-right md:table-cell">
               Delivery rate
             </TableHead>
+            <TableHead class="hidden text-right lg:table-cell">
+              Open rate
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -310,13 +325,16 @@ const period = computed(() => periods.find(option => option.value === days.value
             <TableCell class="hidden text-right tabular-nums md:table-cell">
               {{ campaign.counts.sent ? `${campaign.delivery_rate}%` : '–' }}
             </TableCell>
+            <TableCell class="hidden text-right tabular-nums lg:table-cell">
+              {{ campaign.open_rate !== null && campaign.counts.sent ? `${campaign.open_rate}%` : '–' }}
+            </TableCell>
           </TableRow>
           <TableRow v-if="rowsLoading && !rows.length">
-            <TableCell :colspan="6">
+            <TableCell :colspan="7">
               <Skeleton class="h-9" />
             </TableCell>
           </TableRow>
-          <TableEmpty v-if="!rowsLoading && !rowsError && !rows.length" :colspan="6">
+          <TableEmpty v-if="!rowsLoading && !rowsError && !rows.length" :colspan="7">
             <div class="grid place-items-center gap-3 py-6">
               <span class="grid size-11 place-items-center rounded-full bg-brand-soft text-brand"><BarChart3 class="size-5" /></span>
               <span>No campaigns started in the last {{ period }}.</span>
