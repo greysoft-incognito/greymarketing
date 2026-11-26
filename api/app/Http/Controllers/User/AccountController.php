@@ -318,7 +318,7 @@ class AccountController extends Controller
 
         $request->user('sanctum')->currentAccessToken()->delete();
 
-        if (! $request->isXmlHttpRequest()) {
+        if (! $request->isXmlHttpRequest() && ! $request->expectsJson()) {
             session()->flush();
 
             return response()->redirectToRoute('web.login');
