@@ -12,7 +12,7 @@ const page = defineModel<number>({ required: true });
 </script>
 
 <template>
-  <div v-if="meta && meta.total" class="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+  <div v-if="meta && meta.total" class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
     <span class="text-xs text-muted-foreground tabular-nums">
       Showing {{ formatNumber(meta.from ?? 0) }}–{{ formatNumber(meta.to ?? 0) }} of {{ formatNumber(meta.total) }} {{ noun }}
     </span>
