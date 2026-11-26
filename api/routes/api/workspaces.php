@@ -7,6 +7,7 @@ use App\Http\Controllers\Workspace\ContactController;
 use App\Http\Controllers\Workspace\ContactImportController;
 use App\Http\Controllers\Workspace\ContactListController;
 use App\Http\Controllers\Workspace\ProviderConnectionController;
+use App\Http\Controllers\Workspace\ReportController;
 use App\Http\Controllers\Workspace\StatsController;
 use App\Http\Controllers\Workspace\TemplateController;
 use App\Http\Controllers\Workspace\WorkspaceController;
@@ -21,6 +22,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::scopeBindings()->prefix('workspaces/{workspace}')->name('workspaces.')->group(function () {
         Route::get('stats', StatsController::class)->name('stats');
+        Route::get('reports', [ReportController::class, 'show'])->name('reports.show');
+        Route::get('reports/campaigns', [ReportController::class, 'campaigns'])->name('reports.campaigns');
 
         Route::apiResource('connections', ProviderConnectionController::class);
         Route::post('connections/{connection}/test', [ProviderConnectionController::class, 'test'])->name('connections.test');

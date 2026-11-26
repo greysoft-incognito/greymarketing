@@ -97,6 +97,7 @@ class CampaignTest extends TestCase
 
         $this->assertSame('completed', $campaign->status->value);
         $this->assertSame(2, $campaign->recipients_count);
+        $this->assertSame($this->connection->id, $campaign->provider_connection_id);
         $this->assertSame(['pending' => 0, 'sent' => 2, 'delivered' => 0, 'failed' => 0, 'skipped' => 0], $campaign->statusCounts());
 
         Http::assertSentCount(2);
