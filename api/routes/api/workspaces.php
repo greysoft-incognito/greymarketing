@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('members', [MemberController::class, 'index'])->name('members.index');
         Route::patch('members/{member:username}', [MemberController::class, 'update'])->name('members.update');
         Route::delete('members/{member:username}', [MemberController::class, 'destroy'])->name('members.destroy');
+        Route::post('members/{member:username}/ownership', [MemberController::class, 'transferOwnership'])->name('members.ownership');
 
         Route::apiResource('invitations', InvitationController::class)->only(['index', 'store', 'destroy']);
         Route::post('invitations/{invitation}/resend', [InvitationController::class, 'resend'])->name('invitations.resend');

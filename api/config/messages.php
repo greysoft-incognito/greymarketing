@@ -187,6 +187,17 @@ return [
             'This invite works for :days days. If you were not expecting it, you can ignore this email.',
         ],
     ],
+    'workspace_ownership' => [
+        'subject' => 'You now own :workspace on :app_name',
+        'lines' => [
+            'Hello :fullname,',
+            ':previous made you the owner of <b>:workspace</b> on :app_name. You can now manage billing and delete the workspace. :previous stays on as an admin.',
+            [
+                'link' => ':app_url',
+                'title' => 'Open your workspace',
+            ],
+        ],
+    ],
     'welcome' => [
         'subject' => ':firstname, welcome to :app_name.',
         'lines' => [

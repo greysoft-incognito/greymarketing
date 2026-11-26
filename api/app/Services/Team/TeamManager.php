@@ -7,13 +7,14 @@ use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Notifications\OwnershipTransferred;
 use App\Notifications\TeamInvitation;
 use App\Services\Billing\UsageLimits;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 /**
- * Invites, roles and removals for a workspace's team. Seats come from the plan through UsageLimits.
+ * Invites, roles, removals and ownership for a workspace's team. Seats come from the plan through UsageLimits.
  */
 class TeamManager
 {
@@ -119,6 +120,30 @@ class TeamManager
         );
 
         $workspace->members()->detach($member);
+    }
+
+    /**
+     * Make a member the owner. The previous owner stays on as an admin.
+     */
+    public function transferOwnership(Workspace $workspace, User $member, User $actor): Workspace
+    {
+        abort_if(
+            $workspace->owner_id === $member->id,
+            HttpStatus::UNPROCESSABLE_ENTITY->value,
+            $member->fullname . ' already owns this workspace.'
+        );
+
+        DB::transaction(function () use ($workspace, $member) {
+            $workspace->members()->updateExistingPivot($workspace->owner_id, ['role' => WorkspaceRole::ADMIN->value]);
+            $workspace->members()->updateExistingPivot($member->id, ['role' => WorkspaceRole::OWNER->value]);
+
+            $workspace->owner()->associate($member);
+            $workspace->save();
+        });
+
+        $member->notify(new OwnershipTransferred($workspace, $actor));
+
+        return $workspace;
     }
 
     protected function send(WorkspaceInvitation $invitation): void
