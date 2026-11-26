@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Audience\CountryController;
 use App\Http\Controllers\Billing\PlanController;
+use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\User\InvitationController as InviteResponseController;
 use App\Http\Controllers\Workspace\BillingController;
 use App\Http\Controllers\Workspace\CampaignController;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('plans', PlanController::class)->name('plans.index');
 Route::get('countries', CountryController::class)->name('countries.index');
+Route::get('branding', [BrandingController::class, 'show'])->name('branding.show');
 Route::get('invites/{token}', [InviteResponseController::class, 'show'])->middleware('throttle:30,1')->name('invites.show');
 
 Route::middleware('auth:sanctum')->group(function () {

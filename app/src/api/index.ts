@@ -1,6 +1,7 @@
 import type {
   AuthResponse,
   Billing,
+  Branding,
   Campaign,
   CampaignDetail,
   CampaignInput,
@@ -57,6 +58,10 @@ export const auth = {
 
 export const providers = {
   catalog: () => alova.Get<Envelope<Provider[]>>('/providers', { name: 'providers.catalog', cacheFor: 10 * 60 * 1000 }),
+};
+
+export const branding = {
+  show: () => alova.Get<Envelope<Branding>>('/branding', { name: 'branding', cacheFor: 10 * 60 * 1000, hitSource: 'branding.write' }),
 };
 
 export const countries = {

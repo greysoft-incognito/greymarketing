@@ -1,4 +1,4 @@
-import type { Billing, Envelope, Paginated, Plan, Subscription, Workspace } from './types';
+import type { Billing, Branding, Envelope, Paginated, Plan, Subscription, Workspace } from './types';
 import { alova } from './client';
 
 export interface AdminPlan extends Plan {
@@ -116,6 +116,16 @@ export const admin = {
 
   subscriptions: (params: { workspace?: string; status?: Subscription['status']; page?: number; limit?: number } = {}) =>
     alova.Get<Paginated<AdminSubscription>>('/admin/subscriptions', { name: 'admin.subscriptions.list', params, hitSource: 'admin.subscriptions.write' }),
+
+  uploadAuthImage: (file: File) => {
+    const form = new FormData();
+
+    form.append('auth_image', file);
+
+    return alova.Post<Envelope<unknown>>('/admin/configurations', form, { name: 'branding.write' });
+  },
+
+  resetAuthImage: () => alova.Delete<Envelope<Branding>>('/admin/branding/auth-image', undefined, { name: 'branding.write' }),
 
   cancelSubscription: (id: string) =>
     alova.Post<Envelope<AdminSubscription>>(`/admin/subscriptions/${id}/cancel`, undefined, { name: 'admin.subscriptions.write' }),
