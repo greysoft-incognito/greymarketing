@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
         Route::post('billing/verify', [BillingController::class, 'verify'])->name('billing.verify');
         Route::post('billing/cancel', [BillingController::class, 'cancel'])->name('billing.cancel');
+        Route::put('billing/auto-renew', [BillingController::class, 'autoRenew'])->name('billing.auto-renew');
         Route::get('billing/transactions', [BillingController::class, 'transactions'])->name('billing.transactions');
     });
 });

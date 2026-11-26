@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\SubscriptionStatus;
 use Illuminate\Http\Request;
 use Toneflix\ResourceModifier\Services\Json\JsonResource;
 
@@ -17,6 +18,13 @@ class SubscriptionResource extends JsonResource
             'status' => $this->status,
             'amount' => (float) $this->amount,
             'currency' => $this->currency,
+            'auto_renew' => (bool) $this->auto_renew,
+            'renews_at' => $this->auto_renew && $this->status === SubscriptionStatus::ACTIVE ? $this->ends_at : null,
+            'card' => $this->card ? [
+                'brand' => $this->card['brand'] ?? null,
+                'last4' => $this->card['last4'] ?? null,
+                'expiry' => $this->card['expiry'] ?? null,
+            ] : null,
             'starts_at' => $this->starts_at,
             'ends_at' => $this->ends_at,
             'cancelled_at' => $this->cancelled_at,

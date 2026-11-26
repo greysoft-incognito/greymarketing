@@ -4,7 +4,9 @@ namespace App\Traits;
 
 use App\Enums\HttpStatus;
 use App\Models\TempUser;
+use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Payment\ChargesSavedCards;
 use App\Services\Payment\FlutterwaveProcessor;
 use App\Services\Payment\PaymentInterface;
 use App\Services\Payment\PaystackProcessor;
@@ -93,6 +95,52 @@ trait ControllerCanExtend
         $transaction->save();
 
         return collect($paymentIntent->toArray());
+    }
+
+    /**
+     * Charge a saved card and record the attempt as a pending or rejected transaction.
+     *
+     * @param  array{token: string, email: ?string, country: ?string}  $card
+     *
+     * @throws ValidationException
+     */
+    public function chargeSavedCard(
+        Request $request,
+        User $user,
+        array $card,
+        int|float $amount,
+        string $currency,
+        ?Model $transactable = null,
+    ): Transaction {
+        $processor = $this->resolvePaymentProcessor($request, $user);
+
+        abort_unless(
+            $processor instanceof ChargesSavedCards,
+            HttpStatus::BAD_REQUEST->value,
+            'This payment method cannot charge saved cards.'
+        );
+
+        $charge = $processor->chargeSavedCard($card, $amount, $currency, $transactable ? class_basename($transactable) . ' renewal' : null);
+
+        $transaction = $user->transactions()->make([
+            'request_data' => ['currency' => $currency, 'saved_card' => true, 'message' => $charge['message']],
+            'reference' => $charge['reference'],
+            'discount' => 0,
+            'status' => isset($charge['error']) ? 'rejected' : 'pending',
+            'method' => $this->paymentProcessor,
+            'amount' => $amount,
+            'fees' => 0,
+            'due' => $amount,
+        ]);
+
+        if ($transactable) {
+            $transaction->transactable_type = $transactable->getMorphClass();
+            $transaction->transactable_id = $transactable->id;
+        }
+
+        $transaction->save();
+
+        return $transaction;
     }
 
     /**

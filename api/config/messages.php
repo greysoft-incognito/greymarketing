@@ -140,6 +140,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Billing messages
+    |--------------------------------------------------------------------------
+    |
+    | Sent when a plan could not be renewed with its saved card.
+    |
+    */
+    'billing::renewal_failed' => [
+        'subject' => 'We could not renew your :plan plan.',
+        'lines' => [
+            'Hello :firstname,',
+            'We tried to renew the :plan plan for :workspace with your :card, but the charge did not go through: :reason',
+            'The plan ends on :ends_at. Pay for it on the billing page to keep its limits.',
+            [
+                'link' => ':app_url/billing',
+                'title' => 'Open billing',
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Other messages
     |--------------------------------------------------------------------------
     |

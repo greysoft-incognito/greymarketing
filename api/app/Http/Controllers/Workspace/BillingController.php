@@ -103,6 +103,33 @@ class BillingController extends Controller
     }
 
     /**
+     * Turn renewal with the saved card on or off.
+     */
+    public function autoRenew(Request $request, Workspace $workspace, SubscriptionManager $manager)
+    {
+        $this->authorize('manage', $workspace);
+
+        $valid = $this->validate($request, [
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        /** @var Subscription|null $subscription */
+        $subscription = $workspace->currentSubscription;
+
+        abort_unless($subscription, HttpStatus::CONFLICT->value, 'There is no subscription to renew.');
+
+        $subscription = $manager->setAutoRenew($subscription->load('plan'), (bool) $valid['enabled']);
+
+        return (new SubscriptionResource($subscription))->additional([
+            'message' => $subscription->auto_renew
+                ? "Your plan renews automatically on {$subscription->ends_at->toFormattedDayDateString()}."
+                : "Auto-renewal is off. Your plan ends on {$subscription->ends_at->toFormattedDayDateString()}.",
+            'status' => 'success',
+            'status_code' => HttpStatus::OK,
+        ]);
+    }
+
+    /**
      * Payments for the workspace's subscriptions, with the plan each one paid for.
      */
     public function transactions(Request $request, Workspace $workspace)
