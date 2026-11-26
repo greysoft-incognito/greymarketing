@@ -2,7 +2,7 @@
 import type { Invitation, Member } from '@/api';
 import { invalidateCache } from 'alova';
 import { usePagination } from 'alova/client';
-import { Loader2, Mail, MoreHorizontal, Plus, Send, UserMinus, X } from 'lucide-vue-next';
+import { Crown, Loader2, Mail, MoreHorizontal, Plus, Send, UserMinus, X } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import { team } from '@/api';
 import ConfirmDialog from '@/components/app/ConfirmDialog.vue';
@@ -10,6 +10,7 @@ import PageHeader from '@/components/app/PageHeader.vue';
 import PaginationFooter from '@/components/app/PaginationFooter.vue';
 import RefreshButton from '@/components/app/RefreshButton.vue';
 import InviteMemberDialog from '@/components/team/InviteMemberDialog.vue';
+import TransferOwnershipDialog from '@/components/team/TransferOwnershipDialog.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -134,6 +135,24 @@ async function remove() {
   }
 }
 
+const transferring = ref<Member | null>(null);
+const transferOpen = computed({
+  get: () => !!transferring.value,
+  set: (value) => {
+    if (!value) {
+      transferring.value = null;
+    }
+  },
+});
+
+/**
+ * Reload roles for the signed-in user, then the team, once ownership has moved.
+ */
+async function transferred() {
+  await workspace.load();
+  await sync();
+}
+
 const busyInvite = ref<string | null>(null);
 
 async function resend(invitation: Invitation) {
@@ -228,7 +247,7 @@ async function revoke(invitation: Invitation) {
               <TableHead class="hidden sm:table-cell">
                 Joined
               </TableHead>
-              <TableHead class="w-10 sm:w-24" />
+              <TableHead class="w-10 sm:w-48" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -275,16 +294,25 @@ async function revoke(invitation: Invitation) {
               </TableCell>
               <TableCell class="text-right">
                 <template v-if="workspace.canManage && member.role !== 'owner' && !member.is_you">
-                  <Button variant="ghost" size="sm" class="hidden sm:inline-flex" @click="removing = member">
-                    Remove
-                  </Button>
+                  <div class="hidden justify-end gap-1 sm:flex">
+                    <Button v-if="current.is_owner" variant="ghost" size="sm" @click="transferring = member">
+                      Make owner
+                    </Button>
+                    <Button variant="ghost" size="sm" @click="removing = member">
+                      Remove
+                    </Button>
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger as-child>
-                      <Button variant="ghost" size="icon" class="size-8 sm:hidden" :aria-label="`${member.name} actions`">
+                      <Button variant="ghost" size="icon" class="ml-auto flex size-8 sm:hidden" :aria-label="`${member.name} actions`">
                         <MoreHorizontal />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" class="w-40">
+                      <DropdownMenuItem v-if="current.is_owner" @select="transferring = member">
+                        <Crown />
+                        Make owner
+                      </DropdownMenuItem>
                       <DropdownMenuItem variant="destructive" @select="removing = member">
                         <UserMinus />
                         Remove
@@ -390,6 +418,8 @@ async function revoke(invitation: Invitation) {
   </div>
 
   <InviteMemberDialog v-model:open="inviting" :seats-left="seatsLeft" @sent="sync" />
+
+  <TransferOwnershipDialog v-model:open="transferOpen" :member="transferring" @transferred="transferred" />
 
   <ConfirmDialog
     v-model:open="removeOpen"
