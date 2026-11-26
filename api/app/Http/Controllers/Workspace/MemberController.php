@@ -60,4 +60,26 @@ class MemberController extends Controller
             'status_code' => HttpStatus::ACCEPTED,
         ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
     }
+
+    /**
+     * Hand the workspace to another member once the owner confirms their password.
+     */
+    public function transferOwnership(Request $request, Workspace $workspace, User $member, TeamManager $team)
+    {
+        $this->authorize('transfer', $workspace);
+
+        $this->validate($request, [
+            'password' => ['required', 'string', 'current_password:sanctum'],
+        ], [
+            'password.current_password' => 'Your password is not correct.',
+        ]);
+
+        $team->transferOwnership($workspace, $member, $request->user());
+
+        return (new MemberResource($workspace->members()->whereKey($member->id)->firstOrFail()))->additional([
+            'message' => $member->fullname . ' now owns ' . $workspace->name . '. You are an admin.',
+            'status' => 'success',
+            'status_code' => HttpStatus::ACCEPTED,
+        ])->response()->setStatusCode(HttpStatus::ACCEPTED->value);
+    }
 }

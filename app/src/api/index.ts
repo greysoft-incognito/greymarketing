@@ -233,6 +233,9 @@ export const team = {
 
   remove: (workspace: string, member: string) => alova.Delete<Envelope<Member>>(`/workspaces/${workspace}/members/${member}`, undefined, { name: 'team.write' }),
 
+  transferOwnership: (workspace: string, member: string, password: string) =>
+    alova.Post<Envelope<Member>>(`/workspaces/${workspace}/members/${member}/ownership`, { password }, { name: 'workspaces.write' }),
+
   invitations: (workspace: string, params: { page?: number; limit?: number } = {}) =>
     alova.Get<Paginated<Invitation>>(`/workspaces/${workspace}/invitations`, { name: 'team.invitations', params, hitSource: 'team.write' }),
 

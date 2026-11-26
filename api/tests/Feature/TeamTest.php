@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
+use App\Notifications\OwnershipTransferred;
 use App\Notifications\TeamInvitation;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
@@ -239,5 +240,87 @@ class TeamTest extends TestCase
         Sanctum::actingAs($this->workspace->owner);
 
         $this->deleteJson("/api/workspaces/{$this->workspace->ulid}/members/{$stranger->username}")->assertNotFound();
+    }
+
+    public function testOwnerCanTransferOwnershipToAMember(): void
+    {
+        $owner = $this->workspace->owner;
+        $member = $this->addMember();
+
+        Sanctum::actingAs($owner);
+
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/{$member->username}/ownership", ['password' => 'password'])
+            ->assertAccepted()
+            ->assertJsonPath('data.id', $member->username)
+            ->assertJsonPath('data.role', 'owner');
+
+        $this->workspace->refresh();
+
+        $this->assertTrue($this->workspace->owner->is($member));
+        $this->assertSame('owner', $this->workspace->roleOf($member)->value);
+        $this->assertSame('admin', $this->workspace->roleOf($owner)->value);
+
+        Notification::assertSentTo($member, OwnershipTransferred::class);
+    }
+
+    public function testTheNewOwnerIsEmailed(): void
+    {
+        $member = $this->addMember();
+        $mail = (new OwnershipTransferred($this->workspace, $this->workspace->owner))->toMail($member);
+
+        $this->assertStringContainsString($this->workspace->name, $mail->subject);
+        $this->assertStringContainsString($this->workspace->owner->fullname, (string) $mail->render());
+    }
+
+    public function testThePreviousOwnerCanLeaveAfterATransfer(): void
+    {
+        $owner = $this->workspace->owner;
+        $member = $this->addMember('admin');
+
+        Sanctum::actingAs($owner);
+
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/{$member->username}/ownership", ['password' => 'password'])
+            ->assertAccepted();
+
+        $this->deleteJson("/api/workspaces/{$this->workspace->ulid}")->assertForbidden();
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/{$owner->username}/ownership", ['password' => 'password'])
+            ->assertForbidden();
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/leave")->assertAccepted();
+    }
+
+    public function testTransferNeedsTheOwnersPassword(): void
+    {
+        $member = $this->addMember();
+
+        Sanctum::actingAs($this->workspace->owner);
+
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/{$member->username}/ownership", ['password' => 'wrong'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['password' => 'Your password is not correct.']);
+
+        $this->assertSame('member', $this->workspace->roleOf($member)->value);
+        Notification::assertNotSentTo($member, OwnershipTransferred::class);
+    }
+
+    public function testOnlyTheOwnerCanTransferOwnership(): void
+    {
+        $member = $this->addMember();
+
+        Sanctum::actingAs($this->addMember('admin'));
+
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/{$member->username}/ownership", ['password' => 'password'])
+            ->assertForbidden();
+
+        $this->assertSame('member', $this->workspace->roleOf($member)->value);
+    }
+
+    public function testOwnershipOnlyGoesToMembers(): void
+    {
+        Sanctum::actingAs($this->workspace->owner);
+
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/{$this->workspace->owner->username}/ownership", ['password' => 'password'])
+            ->assertUnprocessable();
+        $this->postJson("/api/workspaces/{$this->workspace->ulid}/members/" . User::factory()->create()->username . '/ownership', ['password' => 'password'])
+            ->assertNotFound();
     }
 }

@@ -33,6 +33,14 @@ class WorkspacePolicy
         return $workspace->owner_id !== $user->id && $workspace->roleOf($user) !== null;
     }
 
+    /**
+     * Only the owner may hand the workspace to another member.
+     */
+    public function transfer(User $user, Workspace $workspace): bool
+    {
+        return $workspace->owner_id === $user->id;
+    }
+
     public function delete(User $user, Workspace $workspace): bool
     {
         return $workspace->owner_id === $user->id;
