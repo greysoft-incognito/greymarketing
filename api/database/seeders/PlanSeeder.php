@@ -24,6 +24,7 @@ class PlanSeeder extends Seeder
             'contacts_limit' => 500,
             'emails_limit' => 2000,
             'sms_limit' => 200,
+            'seats_limit' => 1,
             'is_default' => true,
             'sort' => 0,
         ]);
@@ -36,6 +37,7 @@ class PlanSeeder extends Seeder
             'contacts_limit' => 5000,
             'emails_limit' => 25000,
             'sms_limit' => 2500,
+            'seats_limit' => 3,
             'sort' => 1,
         ]);
 
@@ -47,6 +49,7 @@ class PlanSeeder extends Seeder
             'contacts_limit' => 50000,
             'emails_limit' => 250000,
             'sms_limit' => 25000,
+            'seats_limit' => 10,
             'sort' => 2,
         ]);
     }
