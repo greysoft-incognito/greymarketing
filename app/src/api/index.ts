@@ -7,6 +7,7 @@ import type {
   CampaignMessage,
   CampaignReport,
   Channel,
+  Checkout,
   ConnectionInput,
   Contact,
   ContactImport,
@@ -16,10 +17,13 @@ import type {
   MessageStatus,
   ImportUpload,
   Paginated,
+  Plan,
   Provider,
   ProviderConnection,
+  Subscription,
   Template,
   TemplateInput,
+  Transaction,
   User,
   Workspace,
   WorkspaceStats,
@@ -56,7 +60,7 @@ export const workspaces = {
 
   stats: (id: string, days = 14) => alova.Get<Envelope<WorkspaceStats>>(`/workspaces/${id}/stats`, { name: 'stats', params: { days }, hitSource: ['contacts.write', 'imports.write', 'campaigns.write'] }),
 
-  billing: (id: string) => alova.Get<Envelope<Billing>>(`/workspaces/${id}/billing`, { name: 'billing', hitSource: ['contacts.write', 'imports.write', 'campaigns.write'] }),
+  billing: (id: string) => alova.Get<Envelope<Billing>>(`/workspaces/${id}/billing`, { name: 'billing', hitSource: ['billing.write', 'contacts.write', 'imports.write', 'campaigns.write'] }),
 
   campaigns: (id: string, params: { status?: string; limit?: number; page?: number } = {}) =>
     alova.Get<Paginated<Campaign>>(`/workspaces/${id}/campaigns`, { name: 'campaigns.list', params, hitSource: 'campaigns.write' }),
@@ -182,4 +186,23 @@ export const campaigns = {
 
   messages: (workspace: string, id: string, params: { status?: MessageStatus; page?: number; limit?: number } = {}) =>
     alova.Get<Paginated<CampaignMessage>>(`/workspaces/${workspace}/campaigns/${id}/messages`, { cacheFor: 0, params }),
+};
+
+/**
+ * Plans and the workspace's subscription, paid through Flutterwave checkout.
+ */
+export const billing = {
+  plans: () => alova.Get<Paginated<Plan>>('/plans', { name: 'billing.plans', cacheFor: 10 * 60 * 1000 }),
+
+  subscribe: (workspace: string, plan: string, redirect: string) =>
+    alova.Post<Checkout>(`/workspaces/${workspace}/billing/subscribe`, { plan, redirect }, { name: 'billing.write' }),
+
+  verify: (workspace: string, reference: string) =>
+    alova.Post<Envelope<Subscription>>(`/workspaces/${workspace}/billing/verify`, { reference }, { name: 'billing.write' }),
+
+  cancel: (workspace: string) =>
+    alova.Post<Envelope<Subscription>>(`/workspaces/${workspace}/billing/cancel`, undefined, { name: 'billing.write' }),
+
+  transactions: (workspace: string, params: { page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<Transaction>>(`/workspaces/${workspace}/billing/transactions`, { name: 'billing.transactions', params, hitSource: 'billing.write' }),
 };
