@@ -13,6 +13,8 @@ import type {
   Paginated,
   Provider,
   ProviderConnection,
+  Template,
+  TemplateInput,
   User,
   Workspace,
   WorkspaceStats,
@@ -131,4 +133,20 @@ export const imports = {
 
   start: (workspace: string, id: string, data: { mapping: Record<string, string | null>; list?: string | null }) =>
     alova.Post<Envelope<ContactImport>>(`/workspaces/${workspace}/imports/${id}/start`, data, { name: 'imports.write' }),
+};
+
+export const templates = {
+  list: (workspace: string, params: { channel?: Channel; page?: number; limit?: number } = {}) =>
+    alova.Get<Paginated<Template>>(`/workspaces/${workspace}/templates`, { name: 'templates.list', params, hitSource: 'templates.write' }),
+
+  show: (workspace: string, id: string) =>
+    alova.Get<Envelope<Template>>(`/workspaces/${workspace}/templates/${id}`, { name: 'templates.show', hitSource: 'templates.write' }),
+
+  create: (workspace: string, data: TemplateInput) =>
+    alova.Post<Envelope<Template>>(`/workspaces/${workspace}/templates`, data, { name: 'templates.write' }),
+
+  update: (workspace: string, id: string, data: TemplateInput) =>
+    alova.Put<Envelope<Template>>(`/workspaces/${workspace}/templates/${id}`, data, { name: 'templates.write' }),
+
+  remove: (workspace: string, id: string) => alova.Delete(`/workspaces/${workspace}/templates/${id}`, undefined, { name: 'templates.write' }),
 };

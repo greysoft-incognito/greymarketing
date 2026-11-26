@@ -106,6 +106,33 @@ export interface Campaign {
   created_at: string;
 }
 
+export interface SmsInfo {
+  encoding: 'gsm7' | 'ucs2';
+  length: number;
+  segments: number;
+}
+
+export interface Template {
+  id: string;
+  channel: Channel;
+  name: string;
+  subject: string | null;
+  html: string | null;
+  body: string | null;
+  tags: string[];
+  sms?: SmsInfo;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateInput {
+  channel?: Channel;
+  name?: string;
+  subject?: string | null;
+  html?: string | null;
+  body?: string | null;
+}
+
 export interface ProviderField {
   key: string;
   label: string;
